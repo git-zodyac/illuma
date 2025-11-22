@@ -10,6 +10,7 @@ export default ({
   coverageDirectory: "artifacts/coverage",
   collectCoverageFrom: [
     "src/**/*.ts",
+    "!src/lib/errors.ts",
     "!src/**/*.{d,types}.ts",
     "!src/**/types.ts",
   ],

@@ -23,10 +23,7 @@ export function createProviderSet(
           continue;
         }
 
-        if (INJECTION_GROUP_SYMBOL in provider && provider[INJECTION_GROUP_SYMBOL]) {
-          (provider as iNodeProviderSet)(container);
-        }
-
+        if (isProviderSet(provider)) provider(container);
         continue;
       }
 
@@ -36,4 +33,14 @@ export function createProviderSet(
 
   fn[INJECTION_GROUP_SYMBOL] = true;
   return fn;
+}
+
+function isProviderSet(
+  provider: iNodeProvider<unknown> | iNodeProviderSet | Ctor<unknown>,
+): provider is iNodeProviderSet {
+  return !!(
+    typeof provider === "function" &&
+    INJECTION_GROUP_SYMBOL in provider &&
+    provider[INJECTION_GROUP_SYMBOL]
+  );
 }

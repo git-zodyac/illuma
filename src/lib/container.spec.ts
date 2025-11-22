@@ -1,35 +1,14 @@
 import { NodeContainer } from "./container";
-import { NodeInjectable } from "./decorator";
+import { INJECTION_SYMBOL, NodeInjectable } from "./decorator";
 import { InjectionError } from "./errors";
 import { createProviderSet } from "./helpers";
 import { nodeInject } from "./injector";
 import { MultiNodeToken, NodeToken } from "./token";
 
-describe("nodeInjections", () => {
-  describe("smoke", () => {
-    it("should create container", () => {
-      expect(new NodeContainer()).toBeDefined();
-    });
-
-    it("should create token", () => {
-      const token = new NodeToken("test");
-      expect(token).toBeDefined();
-      expect(token.name).toBe("test");
-    });
-
-    it("should create with factory", () => {
-      const token = new NodeToken("test", {
-        factory: () => "test-value",
-      });
-      expect(token).toBeDefined();
-      expect(token.name).toBe("test");
-      expect(token.opts?.factory).toBeDefined();
-      expect(token.opts?.factory?.()).toBe("test-value");
-    });
-  });
+describe("NodeContainer", () => {
 
   describe("token providers", () => {
-    it("should instantiate token with factory", () => {
+    it("should provide with factory", () => {
       const container = new NodeContainer();
       const token = new NodeToken("plainToken");
 
@@ -39,11 +18,10 @@ describe("nodeInjections", () => {
       });
 
       container.bootstrap();
-      const value = container.get(token);
-      expect(value).toBe("value");
+      expect(container.get(token)).toBe("value");
     });
 
-    it("should instantiate token with value", () => {
+    it("should provide with value", () => {
       const container = new NodeContainer();
       const token = new NodeToken("plainToken");
 
@@ -53,11 +31,10 @@ describe("nodeInjections", () => {
       });
 
       container.bootstrap();
-      const value = container.get(token);
-      expect(value).toBe("value");
+      expect(container.get(token)).toBe("value");
     });
 
-    it("should instantiate token with class declaration", () => {
+    it("should provide with class", () => {
       const container = new NodeContainer();
       const token = new NodeToken<{ value: string }>("plainToken");
 
@@ -71,12 +48,12 @@ describe("nodeInjections", () => {
       });
 
       container.bootstrap();
-      const value = container.get(token);
-      expect(value).toBeInstanceOf(TestClass);
-      expect(value.value).toBe("class-value");
+      const instance = container.get(token);
+      expect(instance).toBeInstanceOf(TestClass);
+      expect(instance.value).toBe("class-value");
     });
 
-    it("should instantiate token with decorated class", () => {
+    it("should provide decorated class", () => {
       const container = new NodeContainer();
 
       @NodeInjectable()
@@ -87,12 +64,12 @@ describe("nodeInjections", () => {
       container.provide(TestClass);
 
       container.bootstrap();
-      const value = container.get(TestClass);
-      expect(value).toBeInstanceOf(TestClass);
-      expect(value.value).toBe("class-value");
+      const instance = container.get(TestClass);
+      expect(instance).toBeInstanceOf(TestClass);
+      expect(instance.value).toBe("class-value");
     });
 
-    it("should support overrides using class", () => {
+    it("should override with class", () => {
       const container = new NodeContainer();
 
       @NodeInjectable()
@@ -101,7 +78,7 @@ describe("nodeInjections", () => {
       }
 
       class OverrideClass {
-        public readonly value: string = "test-class-value-2";
+        public readonly value: string = "override-value";
       }
 
       container.provide({
@@ -112,12 +89,11 @@ describe("nodeInjections", () => {
       container.bootstrap();
 
       const instance = container.get(TestClass);
-      expect(instance).toBeDefined();
       expect(instance).toBeInstanceOf(OverrideClass);
-      expect(instance.value).toBe("test-class-value-2");
+      expect(instance.value).toBe("override-value");
     });
 
-    it("should support overrides using factory", () => {
+    it("should override with factory", () => {
       const container = new NodeContainer();
 
       @NodeInjectable()
@@ -127,19 +103,14 @@ describe("nodeInjections", () => {
 
       container.provide({
         provide: TestClass,
-        factory: () => ({
-          value: "test-factory-value",
-        }),
+        factory: () => ({ value: "factory-value" }),
       });
 
       container.bootstrap();
-
-      const instance = container.get(TestClass);
-      expect(instance).toBeDefined();
-      expect(instance.value).toBe("test-factory-value");
+      expect(container.get(TestClass).value).toBe("factory-value");
     });
 
-    it("should support overrides using value", () => {
+    it("should override with value", () => {
       const container = new NodeContainer();
 
       @NodeInjectable()
@@ -149,19 +120,14 @@ describe("nodeInjections", () => {
 
       container.provide({
         provide: TestClass,
-        value: {
-          value: "test-value-2",
-        },
+        value: { value: "static-value" },
       });
 
       container.bootstrap();
-
-      const instance = container.get(TestClass);
-      expect(instance).toBeDefined();
-      expect(instance.value).toBe("test-value-2");
+      expect(container.get(TestClass).value).toBe("static-value");
     });
 
-    it("should support aliasing", () => {
+    it("should alias tokens", () => {
       const container = new NodeContainer();
 
       @NodeInjectable()
@@ -170,43 +136,56 @@ describe("nodeInjections", () => {
       }
 
       @NodeInjectable()
-      class TestClass2 {
-        public readonly value: string = "test-class-value-2";
+      class AliasedClass {
+        public readonly value: string = "aliased-value";
       }
 
-      container.provide(TestClass2);
+      container.provide(AliasedClass);
       container.provide({
         provide: TestClass,
-        alias: TestClass2,
+        alias: AliasedClass,
       });
 
       container.bootstrap();
 
-      const target = container.get(TestClass2);
-      expect(target).toBeDefined();
-      expect(target).toBeInstanceOf(TestClass2);
-      expect(target.value).toBe("test-class-value-2");
-
       const instance = container.get(TestClass);
-      expect(instance).toBeDefined();
-      expect(instance).toBeInstanceOf(TestClass2);
-      expect(instance.value).toBe("test-class-value-2");
+      expect(instance).toBeInstanceOf(AliasedClass);
+      expect(instance.value).toBe("aliased-value");
     });
 
-    it("should fallback to token built-in factory", () => {
+    it("should use token built-in factory", () => {
       const container = new NodeContainer();
       const token = new NodeToken("plainToken", {
-        factory: () => "built-in-factory-value",
+        factory: () => "built-in-value",
       });
 
       container.provide(token);
 
       container.bootstrap();
-      const value = container.get(token);
-      expect(value).toBe("built-in-factory-value");
+      expect(container.get(token)).toBe("built-in-value");
     });
 
-    it("should throw error when token not found", () => {
+    it("should override token declaration with decorated class", () => {
+      const container = new NodeContainer();
+      const token = new NodeToken<{ value: string }>("TOKEN");
+
+      class TestClass {
+        public readonly value = "decorated-value";
+      }
+
+      // Manually assign the token to make it "decorated"
+      (TestClass as any)[INJECTION_SYMBOL] = token;
+
+      container.provide(token);
+      container.provide(TestClass);
+
+      container.bootstrap();
+      const instance = container.get(token);
+      expect(instance).toBeInstanceOf(TestClass);
+      expect(instance.value).toBe("decorated-value");
+    });
+
+    it("should throw when token not found", () => {
       const container = new NodeContainer();
       const token = new NodeToken("plainToken");
 
@@ -216,61 +195,43 @@ describe("nodeInjections", () => {
   });
 
   describe("multi token providers", () => {
-    it("should inject multi factories", () => {
+    it("should provide multiple factories", () => {
       const container = new NodeContainer();
-
-      // Plain value
       const token = new MultiNodeToken<string>("tokenValue");
 
       for (let i = 0; i < 3; i++) {
         container.provide({
           provide: token,
-          factory: () => `test-value-${i}`,
+          factory: () => `value-${i}`,
         });
       }
 
       container.bootstrap();
-
-      const value = container.get(token);
-
-      expect(value).toBeDefined();
-      expect(Array.isArray(value)).toBe(true);
-      expect(value.length).toBe(3);
-      expect(value).toEqual(["test-value-0", "test-value-1", "test-value-2"]);
+      expect(container.get(token)).toEqual(["value-0", "value-1", "value-2"]);
     });
 
-    it("should inject multi values", () => {
+    it("should provide multiple values", () => {
       const container = new NodeContainer();
-
-      // Plain value
       const token = new MultiNodeToken<string>("tokenValue");
 
       for (let i = 0; i < 3; i++) {
         container.provide({
           provide: token,
-          value: `test-value-${i}`,
+          value: `value-${i}`,
         });
       }
 
       container.bootstrap();
-
-      const value = container.get(token);
-
-      expect(value).toBeDefined();
-      expect(Array.isArray(value)).toBe(true);
-      expect(value.length).toBe(3);
-      expect(value).toEqual(["test-value-0", "test-value-1", "test-value-2"]);
+      expect(container.get(token)).toEqual(["value-0", "value-1", "value-2"]);
     });
 
-    it("should inject multi classes", () => {
+    it("should provide multiple classes", () => {
       const container = new NodeContainer();
-
-      // Plain value
       const token = new MultiNodeToken<{ value: string }>("tokenValue");
 
       for (let i = 0; i < 3; i++) {
         class TestClass {
-          public readonly value = `test-value-${i}`;
+          public readonly value = `value-${i}`;
         }
 
         container.provide({
@@ -280,29 +241,18 @@ describe("nodeInjections", () => {
       }
 
       container.bootstrap();
-
-      const value = container.get(token);
-
-      expect(value).toBeDefined();
-      expect(Array.isArray(value)).toBe(true);
-      expect(value.length).toBe(3);
-      expect(value.map((v) => v.value)).toEqual([
-        "test-value-0",
-        "test-value-1",
-        "test-value-2",
-      ]);
+      const values = container.get(token);
+      expect(values.map((v) => v.value)).toEqual(["value-0", "value-1", "value-2"]);
     });
 
-    it("should inject multi decorated classes", () => {
+    it("should alias multiple decorated classes", () => {
       const container = new NodeContainer();
-
-      // Plain value
       const token = new MultiNodeToken<{ value: string }>("MULTI_TOKEN");
 
       for (let i = 0; i < 3; i++) {
         @NodeInjectable()
         class TestClass {
-          public readonly value = `test-value-${i}`;
+          public readonly value = `value-${i}`;
         }
 
         container.provide({
@@ -312,39 +262,38 @@ describe("nodeInjections", () => {
       }
 
       container.bootstrap();
-
-      const value = container.get(token);
-
-      expect(value).toBeDefined();
-      expect(Array.isArray(value)).toBe(true);
-      expect(value.length).toBe(3);
-      expect(value.map((v) => v.value)).toEqual([
-        "test-value-0",
-        "test-value-1",
-        "test-value-2",
-      ]);
+      const values = container.get(token);
+      expect(values.map((v) => v.value)).toEqual(["value-0", "value-1", "value-2"]);
     });
 
-    it("should merge multi nodes when aliasing", () => {
+    it("should handle multi-token aliasing unregistered single tokens", () => {
       const container = new NodeContainer();
+      const singleToken = new NodeToken<string>("SINGLE");
+      const multiToken = new MultiNodeToken<string>("MULTI");
 
-      // Plain value
+      // Alias a single token that was never registered
+      container.provide({
+        provide: multiToken,
+        alias: singleToken,
+      });
+
+      // This should throw because the aliased token has no provider
+      expect(() => container.bootstrap()).toThrow(InjectionError.notFound(singleToken));
+    });
+
+    it("should merge aliased multi tokens", () => {
+      const container = new NodeContainer();
       const tokenA = new MultiNodeToken<string>("tokenValueA");
-
-      for (let i = 0; i < 3; i++) {
-        container.provide({
-          provide: tokenA,
-          factory: () => `test-value-A-${i}`,
-        });
-      }
-
-      // Alias
       const tokenB = new MultiNodeToken<string>("tokenValueB");
 
       for (let i = 0; i < 3; i++) {
         container.provide({
+          provide: tokenA,
+          factory: () => `A-${i}`,
+        });
+        container.provide({
           provide: tokenB,
-          factory: () => `test-value-B-${i}`,
+          factory: () => `B-${i}`,
         });
       }
 
@@ -354,46 +303,30 @@ describe("nodeInjections", () => {
       });
 
       container.bootstrap();
-
-      const value = container.get(tokenB);
-
-      expect(value).toBeDefined();
-      expect(Array.isArray(value)).toBe(true);
-      expect(value.length).toBe(6);
-      expect(value).toEqual(
-        expect.arrayContaining([
-          "test-value-B-0",
-          "test-value-B-1",
-          "test-value-B-2",
-          "test-value-A-0",
-          "test-value-A-1",
-          "test-value-A-2",
-        ]),
+      const values = container.get(tokenB);
+      expect(values.length).toBe(6);
+      expect(values).toEqual(
+        expect.arrayContaining(["B-0", "B-1", "B-2", "A-0", "A-1", "A-2"]),
       );
     });
 
-    it("should inject mixed multi providers", () => {
+    it("should mix provider types", () => {
       const container = new NodeContainer();
-
-      // Plain value
       const token = new MultiNodeToken<{ value: string }>("MULTI_TOKEN");
 
       for (let i = 0; i < 3; i++) {
-        // Value provider
         container.provide({
           provide: token,
-          value: { value: `test-value-value-${i}` },
+          value: { value: `val-${i}` },
         });
 
-        // Factory provider
         container.provide({
           provide: token,
-          factory: () => ({ value: `test-value-factory-${i}` }),
+          factory: () => ({ value: `fac-${i}` }),
         });
 
-        // Class provider
         class TestClass {
-          public readonly value = `test-value-class-${i}`;
+          public readonly value = `cls-${i}`;
         }
 
         container.provide({
@@ -403,131 +336,105 @@ describe("nodeInjections", () => {
       }
 
       container.bootstrap();
-
-      const value = container.get(token);
-
-      expect(value).toBeDefined();
-      expect(Array.isArray(value)).toBe(true);
-      expect(value.length).toBe(9);
-      expect(value.map((v) => v.value)).toEqual([
-        "test-value-value-0",
-        "test-value-factory-0",
-        "test-value-class-0",
-        "test-value-value-1",
-        "test-value-factory-1",
-        "test-value-class-1",
-        "test-value-value-2",
-        "test-value-factory-2",
-        "test-value-class-2",
+      const values = container.get(token);
+      expect(values.length).toBe(9);
+      expect(values.map((v) => v.value)).toEqual([
+        "val-0", "fac-0", "cls-0",
+        "val-1", "fac-1", "cls-1",
+        "val-2", "fac-2", "cls-2",
       ]);
     });
 
-    it("should not throw error and return empty array when multi token not found", () => {
+    it("should return empty array when multi token not found", () => {
       const container = new NodeContainer();
       const token = new MultiNodeToken<string>("plainToken");
 
       container.bootstrap();
-      expect(() => container.get(token)).not.toThrow();
       expect(container.get(token)).toEqual([]);
+    });
+
+    it("should handle aliasing unregistered multi-tokens", () => {
+      const container = new NodeContainer();
+      const tokenA = new MultiNodeToken<string>("TOKEN_A");
+      const tokenB = new MultiNodeToken<string>("TOKEN_B");
+
+      // Provide tokenB which aliases tokenA, but tokenA is never registered
+      container.provide({
+        provide: tokenB,
+        value: "direct-value",
+      });
+
+      container.provide({
+        provide: tokenB,
+        alias: tokenA,
+      });
+
+      container.bootstrap();
+      expect(container.get(tokenB)).toEqual(["direct-value"]);
+      expect(container.get(tokenA)).toEqual([]);
     });
   });
 
   describe("injection", () => {
-    it("should inject token into class", () => {
+    it("should inject dependencies", () => {
       const container = new NodeContainer();
+      const dep = new NodeToken<string>("DEP");
 
-      const someToken = new NodeToken<string>("SOME_TOKEN");
       @NodeInjectable()
       class TestClass {
-        public readonly injected = nodeInject(someToken);
-        public readonly value: string = "test-class-value";
+        public readonly injected = nodeInject(dep);
       }
 
       container.provide(TestClass);
-      container.provide({
-        provide: someToken,
-        value: "some-token-value",
-      });
+      container.provide({ provide: dep, value: "dep-value" });
 
       container.bootstrap();
-
-      const instance = container.get(TestClass);
-      expect(instance).toBeDefined();
-      expect(instance).toBeInstanceOf(TestClass);
-      expect(instance.value).toBe("test-class-value");
-      expect(instance.injected).toBe("some-token-value");
+      expect(container.get(TestClass).injected).toBe("dep-value");
     });
 
-    it("should inject multi token into class", () => {
+    it("should inject multi token dependencies", () => {
       const container = new NodeContainer();
-
       const multi = new MultiNodeToken<{ value: string }>("MULTI_TOKEN");
+
       @NodeInjectable()
       class TestClass {
         public readonly injected = nodeInject(multi);
       }
 
       @NodeInjectable()
-      class TestClass2 {
-        public readonly value: string = "test-class-value-2";
+      class Dep {
+        public readonly value = "dep-value";
       }
 
-      container.provide({
-        provide: multi,
-        alias: TestClass2,
-      });
-
-      container.provide({
-        provide: multi,
-        value: { value: "direct-value" },
-      });
-
+      container.provide({ provide: multi, alias: Dep });
+      container.provide({ provide: multi, value: { value: "direct-value" } });
       container.provide(TestClass);
 
       container.bootstrap();
 
       const instance = container.get(TestClass);
-      expect(instance).toBeDefined();
-      expect(instance.injected).toBeDefined();
-      expect(Array.isArray(instance.injected)).toBe(true);
       expect(instance.injected.length).toBe(2);
-      expect(instance.injected.some((i) => i instanceof TestClass2)).toBe(true);
+      expect(instance.injected.some((i) => i instanceof Dep)).toBe(true);
       expect(instance.injected.some((i) => i.value === "direct-value")).toBe(true);
     });
 
-    it("should provide value to factory injection", () => {
+    it("should inject in factories", () => {
       const container = new NodeContainer();
-
       const valueToken = new NodeToken<string>("VALUE_TOKEN");
-      const factoryToken = new NodeToken<string>("FACTORY_TOKEN", {
-        factory: () => {
-          const value = nodeInject(valueToken, { optional: true });
-          return `factory-value-with-${value}`;
-        },
-      });
+      const factoryToken = new NodeToken<string>("FACTORY_TOKEN");
 
-      container.provide({
-        provide: valueToken,
-        value: "injected-value",
-      });
-
+      container.provide({ provide: valueToken, value: "injected-value" });
       container.provide({
         provide: factoryToken,
-        factory: () => {
-          const value = nodeInject(valueToken);
-          return `outer-factory-with-${value}`;
-        },
+        factory: () => `result-${nodeInject(valueToken)}`,
       });
 
       container.bootstrap();
-
-      const factoryValue = container.get(factoryToken);
-      expect(factoryValue).toBe("outer-factory-with-injected-value");
+      expect(container.get(factoryToken)).toBe("result-injected-value");
     });
 
-    it("should provide optional injection", () => {
+    it("should support optional injection", () => {
       const container = new NodeContainer();
-
       const token = new NodeToken<string>("OPTIONAL_TOKEN");
       const target = new NodeToken<string | null>("TARGET_TOKEN");
 
@@ -537,46 +444,136 @@ describe("nodeInjections", () => {
       });
 
       container.bootstrap();
-
-      const value = container.get(target);
-      expect(value).toBeFalsy();
+      expect(container.get(target)).toBeFalsy();
     });
   });
 
-  describe("token groups", () => {
+  describe("provider sets", () => {
     it("should include provider sets", () => {
       const container = new NodeContainer();
-
       const tokenA = new NodeToken<string>("TOKEN_A");
       const tokenB = new NodeToken<string>("TOKEN_B");
 
       const providerSet = createProviderSet(
-        {
-          provide: tokenA,
-          value: "value-a",
-        },
-        {
-          provide: tokenB,
-          value: "value-b",
-        },
+        { provide: tokenA, value: "value-a" },
+        { provide: tokenB, value: "value-b" },
       );
 
       container.include(providerSet);
-
       container.bootstrap();
 
-      const valueA = container.get(tokenA);
-      const valueB = container.get(tokenB);
-
-      expect(valueA).toBe("value-a");
-      expect(valueB).toBe("value-b");
+      expect(container.get(tokenA)).toBe("value-a");
+      expect(container.get(tokenB)).toBe("value-b");
     });
   });
 
   describe("error handling", () => {
-    it("should throw error on circular dependency", () => {
+    it("should throw on duplicate token provider", () => {
+      const container = new NodeContainer();
+      const token = new NodeToken("DUPLICATE");
+
+      container.provide(token);
+      expect(() => container.provide(token)).toThrow(InjectionError.duplicate(token));
+    });
+
+    it("should throw on duplicate multi-token provider", () => {
+      const container = new NodeContainer();
+      const token = new MultiNodeToken("DUPLICATE_MULTI");
+
+      container.provide(token);
+      expect(() => container.provide(token)).toThrow(InjectionError.duplicate(token));
+    });
+
+    it("should throw on duplicate decorated class", () => {
       const container = new NodeContainer();
 
+      @NodeInjectable()
+      class TestClass {
+        public readonly value = "test-value";
+      }
+
+      container.provide(TestClass);
+      expect(() => container.provide(TestClass)).toThrow();
+    });
+
+    it("should throw when providing after bootstrap", () => {
+      const container = new NodeContainer();
+      const token = new NodeToken("TOKEN");
+
+      container.bootstrap();
+      expect(() => container.provide(token)).toThrow(InjectionError.bootstrapped());
+    });
+
+    it("should throw on double bootstrap", () => {
+      const container = new NodeContainer();
+
+      container.bootstrap();
+      expect(() => container.bootstrap()).toThrow(InjectionError.doubleBootstrap());
+    });
+
+    it("should throw when getting before bootstrap", () => {
+      const container = new NodeContainer();
+      const token = new NodeToken("TOKEN");
+
+      expect(() => container.get(token)).toThrow(InjectionError.notBootstrapped());
+    });
+
+    it("should throw on undecorated class", () => {
+      const container = new NodeContainer();
+
+      class TestClass {
+        public readonly value = "test-value";
+      }
+
+      expect(() => container.provide(TestClass)).toThrow(InjectionError.invalidCtor(TestClass));
+    });
+
+    it("should throw on invalid provider", () => {
+      const container = new NodeContainer();
+
+      expect(() => container.provide({} as any)).toThrow(/Cannot use provider/);
+    });
+
+    it("should throw on invalid alias", () => {
+      const container = new NodeContainer();
+      const token = new NodeToken("TOKEN");
+
+      expect(() => container.provide({
+        provide: token,
+        alias: "invalid" as any,
+      })).toThrow(InjectionError.invalidAlias("invalid"));
+    });
+
+    it("should throw on self-aliasing token", () => {
+      const container = new NodeContainer();
+      const token = new NodeToken("TOKEN");
+
+      expect(() => container.provide({
+        provide: token,
+        alias: token,
+      })).toThrow(InjectionError.loopAlias(token));
+    });
+
+    it("should throw on getting invalid token", () => {
+      const container = new NodeContainer();
+
+      container.bootstrap();
+      expect(() => container.get({} as any)).toThrow();
+    });
+
+    it("should throw on getting undecorated class", () => {
+      const container = new NodeContainer();
+
+      class TestClass {
+        public readonly value = "test-value";
+      }
+
+      container.bootstrap();
+      expect(() => container.get(TestClass)).toThrow(InjectionError.invalidCtor(TestClass));
+    });
+
+    it("should throw on circular dependency", () => {
+      const container = new NodeContainer();
       const tokenA = new NodeToken<string>("TOKEN_A");
       const tokenB = new NodeToken<string>("TOKEN_B");
 
@@ -592,6 +589,19 @@ describe("nodeInjections", () => {
       expect(() => container.bootstrap()).toThrow(
         InjectionError.circularDependency(tokenA, [tokenA, tokenB, tokenA]),
       );
+    });
+
+    it("should throw when required dependency is missing", () => {
+      const container = new NodeContainer();
+      const missing = new NodeToken<string>("MISSING");
+      const target = new NodeToken<string>("TARGET");
+
+      container.provide({
+        provide: target,
+        factory: () => nodeInject(missing),
+      });
+
+      expect(() => container.bootstrap()).toThrow(InjectionError.notFound(missing));
     });
   });
 });

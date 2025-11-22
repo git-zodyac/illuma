@@ -211,7 +211,7 @@ export class NodeContainer implements iDIContainer {
   }
 }
 
-function extractToken<T>(provider: Token<T>): NodeBase<T> {
+function extractToken<T>(provider: Token<T>, isAlias = false): NodeBase<T> {
   let token: NodeBase<T> | null = null;
   if (typeof provider === "function" && INJECTION_SYMBOL in provider) {
     const node = provider[INJECTION_SYMBOL];
@@ -219,7 +219,8 @@ function extractToken<T>(provider: Token<T>): NodeBase<T> {
   } else if (isNodeBase<T>(provider)) token = provider;
 
   if (!token) {
-    throw InjectionError.invalidAlias(provider);
+    if (isAlias) throw InjectionError.invalidAlias(provider);
+    throw InjectionError.invalidProvider(JSON.stringify(provider));
   }
 
   return token;
@@ -235,7 +236,7 @@ function extractProvider<T>(provider: Providable<T>): NodeBase<T> | (() => T) {
   if ("value" in provider) return () => provider.value;
   if ("factory" in provider) return provider.factory;
   if ("useClass" in provider) return () => new provider.useClass();
-  if ("alias" in provider) return extractToken(provider.alias);
+  if ("alias" in provider) return extractToken(provider.alias, true);
 
   throw InjectionError.invalidProvider(JSON.stringify(provider));
 }
@@ -278,7 +279,7 @@ function resolveTreeNode<T>(
     }
   }
 
-  let resolvedNode: TreeNode<T> | null = null;
+  let resolvedNode: TreeNode<T>;
   if (proto instanceof ProtoNodeSingle) {
     const nextNode = new TreeNodeSingle<T>(proto);
     for (const injection of proto.injections) {
@@ -334,14 +335,8 @@ function resolveTreeNode<T>(
     resolvedNode = nextNode;
   }
 
-  if (!resolvedNode) {
-    if (proto instanceof ProtoNodeTransparent) {
-      throw InjectionError.couldNotResolve();
-    }
-
-    throw InjectionError.couldNotResolve(proto.token);
-  }
-
-  cache.set(proto, resolvedNode);
-  return resolvedNode;
+  // biome-ignore lint/style/noNonNullAssertion: This is not possible, cause we identify proto type above.
+  const res = resolvedNode!;
+  cache.set(proto, res);
+  return res;
 }

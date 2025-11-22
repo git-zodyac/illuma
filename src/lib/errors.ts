@@ -10,67 +10,64 @@ export class InjectionError extends Error {
   // Provider errors
   public static duplicate(token: NodeBase<unknown>): InjectionError {
     return new InjectionError(
-      `Duplicate provider for token "${token.toString()}" detected.`,
+      `[i100] Duplicate provider for token "${token.toString()}" detected.`,
+    );
+  }
+  public static duplicateFactory(token: NodeBase<unknown>): InjectionError {
+    return new InjectionError(
+      `[i101] Tried to re-provide factory for token "${token.toString()}" detected.`,
     );
   }
 
   public static invalidCtor(ctor: Ctor<unknown>): InjectionError {
     return new InjectionError(
-      `Cannot use constructor for token "${ctor.name}". Please make sure to use @nodeInjectable() decorator`,
+      `[i102] Cannot use constructor for token "${ctor.name}". Please make sure to use @nodeInjectable() decorator`,
     );
   }
 
   public static invalidProvider(provider: string): InjectionError {
     return new InjectionError(
-      `Cannot use provider as it is neither a NodeToken nor MultiNodeToken nor a valid constructor.:\n${provider}`,
+      `[i103] Cannot use provider as it is neither a NodeToken nor MultiNodeToken nor a valid constructor.:\n${provider}`,
     );
   }
 
   // Alias errors
-  public static invalidAlias(alias: NodeBase<unknown>): InjectionError {
+  public static invalidAlias(alias: unknown): InjectionError {
+    const aliasStr =
+      typeof alias === "function" ? (alias as any).name || "Unknown" : String(alias);
     return new InjectionError(
-      `Cannot use alias as it is not a valid provider:\n${alias.toString()}`,
+      `[i200] Invalid alias target "${aliasStr}". Alias must be a NodeToken, MultiNodeToken, or a class decorated with @NodeInjectable().`,
     );
   }
 
   public static loopAlias(alias: NodeBase<unknown>): InjectionError {
     return new InjectionError(
-      `Token "${alias.toString()}" cannot alias itself in a loop.`,
+      `[i201] Token "${alias.toString()}" cannot alias itself in a loop.`,
     );
   }
 
   // Bootstrap errors
   public static notBootstrapped(): InjectionError {
     return new InjectionError(
-      "Cannot retrieve providers before the container has been bootstrapped.",
+      "[i300] Cannot retrieve providers before the container has been bootstrapped.",
     );
   }
 
   public static bootstrapped(): InjectionError {
     return new InjectionError(
-      "Cannot modify providers after the container has been bootstrapped.",
+      "[i301] Cannot modify providers after the container has been bootstrapped.",
     );
   }
 
   public static doubleBootstrap(): InjectionError {
     return new InjectionError(
-      "Container has already been bootstrapped and cannot be bootstrapped again.",
+      "[i302] Container has already been bootstrapped and cannot be bootstrapped again.",
     );
   }
 
   // Retrieval errors
   public static notFound(token: NodeBase<unknown>): InjectionError {
-    return new InjectionError(`No provider found for "${token.toString()}".`);
-  }
-
-  public static couldNotResolve(token?: NodeBase<unknown>): InjectionError {
-    if (!token) {
-      return new InjectionError("Could not resolve dependencies.");
-    }
-
-    return new InjectionError(
-      `Could not resolve "${token.toString()}". Please check for missing providers or circular dependencies.`,
-    );
+    return new InjectionError(`[i400] No provider found for "${token.toString()}".`);
   }
 
   public static circularDependency(
@@ -84,7 +81,7 @@ export class InjectionError extends Error {
       .join(" -> ");
 
     return new InjectionError(
-      `Circular dependency detected while resolving "${providerStr}":\n${pathStr}`,
+      `[i401] Circular dependency detected while resolving "${providerStr}":\n${pathStr}`,
     );
   }
 
@@ -96,7 +93,32 @@ export class InjectionError extends Error {
     const tokenStr = token instanceof NodeBase ? token.toString() : token.name;
     const parentStr = parent instanceof NodeBase ? parent.toString() : parent.name;
     return new InjectionError(
-      `Cannot instantiate ${parentStr} because it depends on untracked injection ${tokenStr}. Please make sure all injections are properly tracked.`,
+      `[i500] Cannot instantiate ${parentStr} because it depends on untracked injection ${tokenStr}. Please make sure all injections are properly tracked.`,
+    );
+  }
+
+  public static outsideContext(token: NodeBase<unknown> | Ctor<unknown>): InjectionError {
+    const tokenStr = token instanceof NodeBase ? token.toString() : token.name;
+    return new InjectionError(
+      `[i501] Cannot inject "${tokenStr}" outside of an injection context.`,
+    );
+  }
+
+  public static calledUtilsOutsideContext(): InjectionError {
+    return new InjectionError(
+      `[i502] Cannot call injection utilities outside of an injection context.`,
+    );
+  }
+
+  public static instanceAccessFailed(token: NodeBase<unknown>): InjectionError {
+    return new InjectionError(
+      `[i503] Failed to access instance for token "${token.toString()}". It was not properly instantiated.`,
+    );
+  }
+
+  public static accessFailed(): InjectionError {
+    return new InjectionError(
+      `[i504] Failed to access the requested instance due to an unknown error.`,
     );
   }
 }

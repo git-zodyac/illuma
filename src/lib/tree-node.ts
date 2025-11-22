@@ -1,5 +1,5 @@
 import type { InjectionNode } from "./context";
-import { InjectionContextV2 } from "./context";
+import { InjectionContext } from "./context";
 import { InjectionError } from "./errors";
 import type { NodeBase } from "./token";
 import { MultiNodeToken, NodeToken } from "./token";
@@ -18,7 +18,7 @@ export class ProtoNodeSingle<T = any> {
   constructor(token: NodeToken<T>, factory?: () => T) {
     this.token = token;
     this.factory = factory ?? null;
-    this.injections = InjectionContextV2.scan(factory);
+    this.injections = InjectionContext.scan(factory);
   }
 
   public hasFactory(): boolean {
@@ -26,12 +26,7 @@ export class ProtoNodeSingle<T = any> {
   }
 
   public setFactory(factory: () => T): void {
-    if (this.factory) {
-      throw new Error(
-        `Cannot overwrite factory for token ${this.token.toString()} as it is already set`,
-      );
-    }
-
+    if (this.factory) throw InjectionError.duplicateFactory(this.token);
     this.factory = factory;
   }
 
@@ -49,7 +44,7 @@ export class ProtoNodeTransparent<T = any> {
     factory: () => T,
   ) {
     this.factory = factory;
-    this.injections = InjectionContextV2.scan(factory);
+    this.injections = InjectionContext.scan(factory);
   }
 
   public toString(): string {
@@ -131,7 +126,10 @@ export class TreeNodeSingle<T = any> {
   private _resolved = false;
 
   public get instance(): T {
-    if (!this._resolved) throw new Error("Instance not yet resolved");
+    if (!this._resolved) {
+      throw InjectionError.instanceAccessFailed(this.proto.token);
+    }
+
     return this._instance as T;
   }
 
@@ -165,7 +163,7 @@ export class TreeNodeSingle<T = any> {
     // Instantiate self
     const factory = this.proto.factory ?? this.proto.token.opts?.factory;
     if (!factory) throw InjectionError.notFound(this.proto.token);
-    this._instance = InjectionContextV2.instantiate(factory, (token, optional) => {
+    this._instance = InjectionContext.instantiate(factory, (token, optional) => {
       const depNode = depMap.get(token);
       if (!depNode && !optional) {
         throw InjectionError.untracked(token, this.proto.token);
@@ -175,6 +173,7 @@ export class TreeNodeSingle<T = any> {
     });
 
     this._resolved = true;
+    pool.set(this.proto.token, this);
     return pool;
   }
 
@@ -189,7 +188,8 @@ export class TreeNodeTransparent<T = any> {
   private _resolved = false;
 
   public get instance(): T {
-    if (!this._resolved) throw new Error("Instance not yet resolved");
+    if (!this._resolved) throw InjectionError.accessFailed();
+
     return this._instance as T;
   }
 
@@ -221,7 +221,7 @@ export class TreeNodeTransparent<T = any> {
     }
 
     // Instantiate self
-    this._instance = InjectionContextV2.instantiate(
+    this._instance = InjectionContext.instantiate(
       this.proto.factory,
       (token, optional) => {
         const depNode = depMap.get(token);
@@ -275,6 +275,7 @@ export class TreeNodeMulti<T = any> {
     }
 
     this._resolved = true;
+    pool.set(this.proto.token, this);
     return pool;
   }
 

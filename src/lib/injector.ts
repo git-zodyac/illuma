@@ -1,6 +1,8 @@
-import { InjectionContextV2, InjectionNode } from "./context";
+import { InjectionContext, InjectionNode } from "./context";
 import { INJECTION_SYMBOL } from "./decorator";
-import { MultiNodeToken, NodeToken } from "./token";
+import { InjectionError } from "./errors";
+import type { MultiNodeToken, NodeToken } from "./token";
+import { isNodeBase } from "./token";
 import type { ExtractInjectedType, iNodeInjectorOptions } from "./types";
 
 export function nodeInject<N>(
@@ -43,23 +45,21 @@ export function nodeInject<
       ) => unknown) = NodeToken<unknown>,
 >(provider: N, options?: iNodeInjectorOptions) {
   let token: any = provider;
-  if (!InjectionContextV2.contextOpen) {
-    throw new Error("nodeInject() can only be called inside an injection context");
-  }
-
   if (typeof provider === "function" && INJECTION_SYMBOL in provider) {
     token = provider[INJECTION_SYMBOL];
   }
 
-  if (!(token instanceof NodeToken) && !(token instanceof MultiNodeToken)) {
-    throw new Error(`${provider.name} is not a provider`);
+  if (!InjectionContext.contextOpen) {
+    throw InjectionError.outsideContext(token);
   }
 
-  const injection = new InjectionNode(token, options?.optional);
-  InjectionContextV2.calls.add(injection);
+  if (!isNodeBase(token)) throw InjectionError.invalidProvider(String(token));
 
-  if (InjectionContextV2.injector) {
-    return InjectionContextV2.injector(token, options?.optional);
+  const injection = new InjectionNode(token, options?.optional);
+  InjectionContext.calls.add(injection);
+
+  if (InjectionContext.injector) {
+    return InjectionContext.injector(token, options?.optional);
   }
 
   return injection;
