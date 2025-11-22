@@ -26,7 +26,7 @@ describe("createProviderSet", () => {
 
     const providerSet = createProviderSet([
       { provide: token1, value: "value1" },
-      { provide: token2, value: 42 }
+      { provide: token2, value: 42 },
     ]);
 
     container.include(providerSet);
@@ -55,10 +55,7 @@ describe("createProviderSet", () => {
     const token2 = new NodeToken<number>("test2");
 
     const innerSet = createProviderSet({ provide: token1, value: "inner" });
-    const outerSet = createProviderSet(
-      innerSet,
-      { provide: token2, value: 100 }
-    );
+    const outerSet = createProviderSet(innerSet, { provide: token2, value: 100 });
 
     container.include(outerSet);
     container.bootstrap();
@@ -73,10 +70,10 @@ describe("createProviderSet", () => {
     const container = new NodeContainer();
     const token = new NodeToken<string>("test");
 
-    const providerSet = createProviderSet(
-      PlainClass as any,
-      { provide: token, value: "value" }
-    );
+    const providerSet = createProviderSet(PlainClass as any, {
+      provide: token,
+      value: "value",
+    });
 
     container.include(providerSet);
     container.bootstrap();
@@ -88,10 +85,7 @@ describe("createProviderSet", () => {
     const container = new NodeContainer();
     const token = new NodeToken<string>("test");
 
-    const providerSet = createProviderSet(
-      {} as any,
-      { provide: token, value: "valid" }
-    );
+    const providerSet = createProviderSet({} as any, { provide: token, value: "valid" });
 
     container.include(providerSet);
     container.bootstrap();

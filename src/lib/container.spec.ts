@@ -6,7 +6,6 @@ import { nodeInject } from "./injector";
 import { MultiNodeToken, NodeToken } from "./token";
 
 describe("NodeContainer", () => {
-
   describe("token providers", () => {
     it("should provide with factory", () => {
       const container = new NodeContainer();
@@ -339,9 +338,15 @@ describe("NodeContainer", () => {
       const values = container.get(token);
       expect(values.length).toBe(9);
       expect(values.map((v) => v.value)).toEqual([
-        "val-0", "fac-0", "cls-0",
-        "val-1", "fac-1", "cls-1",
-        "val-2", "fac-2", "cls-2",
+        "val-0",
+        "fac-0",
+        "cls-0",
+        "val-1",
+        "fac-1",
+        "cls-1",
+        "val-2",
+        "fac-2",
+        "cls-2",
       ]);
     });
 
@@ -525,7 +530,9 @@ describe("NodeContainer", () => {
         public readonly value = "test-value";
       }
 
-      expect(() => container.provide(TestClass)).toThrow(InjectionError.invalidCtor(TestClass));
+      expect(() => container.provide(TestClass)).toThrow(
+        InjectionError.invalidCtor(TestClass),
+      );
     });
 
     it("should throw on invalid provider", () => {
@@ -538,20 +545,24 @@ describe("NodeContainer", () => {
       const container = new NodeContainer();
       const token = new NodeToken("TOKEN");
 
-      expect(() => container.provide({
-        provide: token,
-        alias: "invalid" as any,
-      })).toThrow(InjectionError.invalidAlias("invalid"));
+      expect(() =>
+        container.provide({
+          provide: token,
+          alias: "invalid" as any,
+        }),
+      ).toThrow(InjectionError.invalidAlias("invalid"));
     });
 
     it("should throw on self-aliasing token", () => {
       const container = new NodeContainer();
       const token = new NodeToken("TOKEN");
 
-      expect(() => container.provide({
-        provide: token,
-        alias: token,
-      })).toThrow(InjectionError.loopAlias(token));
+      expect(() =>
+        container.provide({
+          provide: token,
+          alias: token,
+        }),
+      ).toThrow(InjectionError.loopAlias(token));
     });
 
     it("should throw on getting invalid token", () => {
@@ -569,7 +580,9 @@ describe("NodeContainer", () => {
       }
 
       container.bootstrap();
-      expect(() => container.get(TestClass)).toThrow(InjectionError.invalidCtor(TestClass));
+      expect(() => container.get(TestClass)).toThrow(
+        InjectionError.invalidCtor(TestClass),
+      );
     });
 
     it("should throw on circular dependency", () => {

@@ -15,7 +15,7 @@ describe("nodeInject", () => {
 
       expect(() => nodeInject(token)).toThrow(InjectionError);
       expect(() => nodeInject(token)).toThrow(
-        /Cannot inject "NodeToken\[TestToken\]" outside of an injection context/
+        /Cannot inject "NodeToken\[TestToken\]" outside of an injection context/,
       );
     });
 
@@ -36,7 +36,7 @@ describe("nodeInject", () => {
 
       expect(() => nodeInject(invalidProvider)).toThrow(InjectionError);
       expect(() => nodeInject(invalidProvider)).toThrow(
-        /Cannot use provider as it is neither a NodeToken nor MultiNodeToken/
+        /Cannot use provider as it is neither a NodeToken nor MultiNodeToken/,
       );
     });
 
@@ -70,7 +70,7 @@ describe("nodeInject", () => {
 
       expect(result).toBeInstanceOf(InjectionNode);
       expect((result as InjectionNode<TestService>).token).toBe(
-        (TestService as any)[INJECTION_SYMBOL]
+        (TestService as any)[INJECTION_SYMBOL],
       );
     });
 
@@ -81,7 +81,7 @@ describe("nodeInject", () => {
 
       expect(() => nodeInject(UnDecoratedService as any)).toThrow(InjectionError);
       expect(() => nodeInject(UnDecoratedService as any)).toThrow(
-        /Cannot use provider as it is neither a NodeToken nor MultiNodeToken/
+        /Cannot use provider as it is neither a NodeToken nor MultiNodeToken/,
       );
     });
   });
@@ -201,7 +201,7 @@ describe("nodeInject", () => {
 
       expect(mockInjector).toHaveBeenCalledWith(
         (TestService as any)[INJECTION_SYMBOL],
-        undefined
+        undefined,
       );
     });
 
@@ -316,7 +316,9 @@ describe("nodeInject", () => {
       const result = nodeInject(token);
 
       expect(result).toBeInstanceOf(InjectionNode);
-      expect((result as unknown as InjectionNode<string>).token.name).toBe("Test-Token_123!@#");
+      expect((result as unknown as InjectionNode<string>).token.name).toBe(
+        "Test-Token_123!@#",
+      );
     });
 
     it("should handle rapid context open/close cycles", () => {
