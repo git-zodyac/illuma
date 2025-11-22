@@ -3,7 +3,7 @@ import { INJECTION_SYMBOL } from "./decorator";
 import { InjectionError } from "./errors";
 import { nodeInject } from "./injector";
 import type { NodeBase } from "./token";
-import { MultiNodeToken, NodeToken, isNodeBase } from "./token";
+import { isNodeBase, MultiNodeToken, NodeToken } from "./token";
 import type { ProtoNode, TreeNode } from "./tree-node";
 import {
   ProtoNodeMulti,
@@ -16,11 +16,11 @@ import {
 } from "./tree-node";
 import type {
   Ctor,
-  Providable,
-  Token,
   iDIContainer,
   iNodeProvider,
   iNodeProviderSet,
+  Providable,
+  Token,
 } from "./types";
 
 export interface iContainerOptions {
@@ -106,7 +106,7 @@ export class NodeContainer implements iDIContainer {
       const existing = this._protoNodes.get(token);
       if (existing?.hasFactory()) throw InjectionError.duplicate(token);
 
-      let factory: (() => T) | undefined = undefined;
+      let factory: (() => T) | undefined;
       if (typeof retriever === "function") factory = retriever;
       if (isNodeBase<T>(retriever)) {
         if (retriever === token) throw InjectionError.loopAlias(token);
@@ -134,10 +134,10 @@ export class NodeContainer implements iDIContainer {
     const root = new TreeRootNode();
     const cache = new Map<ProtoNode, TreeNode>();
 
-    const nodes = new Array<ProtoNode>(
+    const nodes: ProtoNode[] = [
       ...this._protoNodes.values(),
       ...this._multiProtoNodes.values(),
-    );
+    ];
 
     for (const node of nodes) {
       if (cache.has(node)) continue;

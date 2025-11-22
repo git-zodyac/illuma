@@ -244,7 +244,7 @@ export class TreeNodeTransparent<T = any> {
 
 export class TreeNodeMulti<T = any> {
   private readonly _deps = new Set<TreeNode<any>>();
-  public readonly instance = new Array<T>();
+  public readonly instance = [] as T[];
   private _resolved = false;
 
   public get dependencies(): Set<TreeNode<any>> {
