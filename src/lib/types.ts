@@ -104,7 +104,9 @@ export interface iDIContainer {
    * @param token - The token or constructor to retrieve
    * @returns The resolved instance
    */
-  get<T>(token: Token<T>): T;
+  get<T>(token: MultiNodeToken<T>): T[];
+  get<T>(token: NodeToken<T>): T;
+  get<T>(token: Ctor<T>): T;
 }
 
 /**

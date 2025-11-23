@@ -18,7 +18,9 @@ export const INJECTION_SYMBOL = Symbol("Injectable");
  * ```typescript
  * @NodeInjectable()
  * class UserService {
- *   getUser() { return { id: 1, name: 'John' }; }
+ *   public getUser() {
+ *     return { id: 1, name: 'John' };
+ *   }
  * }
  *
  * container.provide(UserService);
@@ -42,6 +44,20 @@ export function NodeInjectable<T>() {
  * that do not support decorators.
  * @param ctor
  * @returns
+ *
+ * @example
+ * ```typescript
+ * import { makeInjectable } from '@zodyac/illuma';
+ *
+ * class _UserService {
+ *   public getUser() {
+ *     return { id: 1, name: "John Doe" };
+ *    }
+ * }
+ *
+ * export type UserService = _UserService;
+ * export const UserService = makeInjectable(_UserService);
+ * ```
  */
 export function makeInjectable<T>(ctor: Ctor<T>): Ctor<T> {
   const nodeToken = new NodeToken<T>(`_${ctor.name}`, {

@@ -64,7 +64,7 @@ To use decorators like `@NodeInjectable()`, you need to enable experimental deco
 
 Alternatively, if you prefer not to use decorators, you can use `makeInjectable` to mark classes as injectable:
 
-```ts
+```typescript
 import { makeInjectable } from '@zodyac/illuma';
 
 class _UserService {
@@ -316,6 +316,31 @@ container.bootstrap();
 ```
 
 ## 🔧 Advanced Usage
+
+### Using the Injector Token
+
+The `Injector` token allows you to access the DI container from within your services, enabling dynamic dependency retrieval outside of the injection context:
+
+```typescript
+import { Injector, nodeInject, NodeInjectable } from '@zodyac/illuma';
+
+@NodeInjectable()
+class PluginManager {
+  private readonly injector = nodeInject(Injector);
+
+  getPlugin(pluginToken: Token<any>) {
+    // Dynamically retrieve a dependency at runtime
+    const plugin = this.injector.get(pluginToken);
+    return plugin;
+  }
+}
+```
+
+This is particularly useful for:
+- **Dynamic service loading**: Retrieve services based on runtime conditions
+- **Plugin systems**: Load plugins dynamically from a registry
+- **Factory patterns**: Create instances with dependencies injected from the container
+- **Service locator pattern**: When you need access to multiple services conditionally
 
 ### Circular Dependencies
 

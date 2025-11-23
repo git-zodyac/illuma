@@ -22,6 +22,7 @@ import type {
   Providable,
   Token,
 } from "./types";
+import { Injector, InjectorImpl } from "./utils";
 
 /**
  * Configuration options for the NodeContainer.
@@ -229,6 +230,11 @@ export class NodeContainer implements iDIContainer {
     if (this._bootstrapped) throw InjectionError.doubleBootstrap();
 
     const start = performance.now();
+
+    this.provide({
+      provide: Injector,
+      value: new InjectorImpl(this),
+    });
 
     this._rootNode = this._buildInjectionTree();
     this._rootNode.instantiate();
