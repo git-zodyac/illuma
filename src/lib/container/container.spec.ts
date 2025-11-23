@@ -1,9 +1,14 @@
+import {
+  createProviderSet,
+  INJECTION_SYMBOL,
+  MultiNodeToken,
+  makeInjectable,
+  NodeInjectable,
+  NodeToken,
+  nodeInject,
+} from "../api";
+import { InjectionError } from "../errors";
 import { NodeContainer } from "./container";
-import { INJECTION_SYMBOL, NodeInjectable, makeInjectable } from "./decorator";
-import { InjectionError } from "./errors";
-import { createProviderSet } from "./helpers";
-import { nodeInject } from "./injector";
-import { MultiNodeToken, NodeToken } from "./token";
 
 describe("NodeContainer", () => {
   describe("token providers", () => {

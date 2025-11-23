@@ -1,7 +1,10 @@
-import { NodeInjectable } from "../decorator";
-import { createProviderSet } from "../helpers";
-import { nodeInject } from "../injector";
-import { MultiNodeToken, NodeToken } from "../token";
+import {
+  createProviderSet,
+  MultiNodeToken,
+  NodeInjectable,
+  NodeToken,
+  nodeInject,
+} from "../api";
 import { createTestFactory } from "./helpers";
 
 describe("Testkit Helpers", () => {

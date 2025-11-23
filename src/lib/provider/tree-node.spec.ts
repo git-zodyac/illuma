@@ -1,10 +1,7 @@
-import { InjectionError } from "./errors";
-import { nodeInject } from "./injector";
-import { MultiNodeToken, NodeToken } from "./token";
+import { MultiNodeToken, NodeToken, nodeInject } from "../api";
+import { InjectionError } from "../errors";
+import { ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
 import {
-  ProtoNodeMulti,
-  ProtoNodeSingle,
-  ProtoNodeTransparent,
   TreeNodeMulti,
   TreeNodeSingle,
   TreeNodeTransparent,

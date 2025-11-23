@@ -1,7 +1,5 @@
-import { NodeContainer } from "./container";
-import { NodeInjectable } from "./decorator";
-import { nodeInject } from "./injector";
-import { MultiNodeToken, NodeToken } from "./token";
+import { MultiNodeToken, NodeInjectable, NodeToken, nodeInject } from "../api";
+import { NodeContainer } from "../container";
 import { Injector, InjectorImpl } from "./utils";
 
 describe("InjectorImpl", () => {

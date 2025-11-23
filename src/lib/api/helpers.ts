@@ -1,5 +1,5 @@
+import type { Ctor, iDIContainer, iNodeProvider, iNodeProviderSet } from "../types";
 import { INJECTION_SYMBOL } from "./decorator";
-import type { Ctor, iDIContainer, iNodeProvider, iNodeProviderSet } from "./types";
 
 /**
  * Symbol used to mark provider set functions.

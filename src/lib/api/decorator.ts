@@ -1,5 +1,5 @@
+import type { Ctor } from "../types";
 import { NodeToken } from "./token";
-import type { Ctor } from "./types";
 
 /**
  * Symbol used to mark classes as injectable and store their associated token.

@@ -1,4 +1,4 @@
-import { NodeBase } from "./token";
+import { NodeBase } from "./api";
 import type { Ctor } from "./types";
 
 export class InjectionError extends Error {

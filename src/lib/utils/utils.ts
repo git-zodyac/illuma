@@ -1,6 +1,6 @@
-import type { MultiNodeToken } from "./token";
-import { NodeToken } from "./token";
-import type { Ctor, iDIContainer, Token } from "./types";
+import type { MultiNodeToken } from "../api";
+import { NodeToken } from "../api/token";
+import type { Ctor, iDIContainer, Token } from "../types";
 
 /**
  * Injector implementation that allows retrieving instances from the parent DI container.

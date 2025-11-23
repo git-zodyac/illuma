@@ -1,9 +1,9 @@
-import { InjectionContext, InjectionNode } from "./context";
+import { InjectionContext, InjectionNode } from "../container";
+import { InjectionError } from "../errors";
+import type { ExtractInjectedType, iNodeInjectorOptions } from "../types";
 import { INJECTION_SYMBOL } from "./decorator";
-import { InjectionError } from "./errors";
 import type { MultiNodeToken, NodeToken } from "./token";
 import { isNodeBase } from "./token";
-import type { ExtractInjectedType, iNodeInjectorOptions } from "./types";
 
 /**
  * Injects a dependency within a factory function or constructor.
@@ -43,7 +43,6 @@ export function nodeInject<N>(
         ) => infer T
       ? T | null
       : never;
-
 export function nodeInject<N>(
   token: N,
   options?: iNodeInjectorOptions,
@@ -56,12 +55,10 @@ export function nodeInject<N>(
         ) => infer T
       ? T
       : never;
-
 export function nodeInject<N extends NodeToken<unknown> | MultiNodeToken<unknown>>(
   token: N,
   options?: iNodeInjectorOptions,
 ): ExtractInjectedType<N>;
-
 export function nodeInject<
   N extends
     | NodeToken<unknown>

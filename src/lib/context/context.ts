@@ -1,5 +1,5 @@
-import { InjectionError } from "./errors";
-import type { MultiNodeToken, NodeBase, NodeToken } from "./token";
+import type { MultiNodeToken, NodeBase, NodeToken } from "../api";
+import { InjectionError } from "../errors";
 
 type InjectorFn = (token: NodeBase<any>, optional?: boolean) => any;
 

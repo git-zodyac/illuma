@@ -1,6 +1,6 @@
-import { InjectionContext, InjectionNode } from "./context";
-import { InjectionError } from "./errors";
-import { NodeToken } from "./token";
+import { NodeToken } from "../api";
+import { InjectionContext, InjectionNode } from "../context";
+import { InjectionError } from "../errors";
 
 describe("InjectionContext", () => {
   afterEach(() => {

@@ -1,6 +1,6 @@
+import type { NodeInjectFn } from "../api";
 import { NodeContainer } from "../container";
 import { InjectionError } from "../errors";
-import type { NodeInjectFn } from "../injector";
 import type { iNodeInjectorOptions, iNodeProviderSet, Token } from "../types";
 
 /**

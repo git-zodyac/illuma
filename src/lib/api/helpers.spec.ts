@@ -1,4 +1,4 @@
-import { NodeContainer } from "./container";
+import { NodeContainer } from "../container";
 import { NodeInjectable } from "./decorator";
 import { createProviderSet } from "./helpers";
 import { NodeToken } from "./token";

@@ -1,7 +1,7 @@
-import { InjectionContext, InjectionNode } from "./context";
+import { InjectionContext, InjectionNode } from "../container";
+import { InjectionError } from "../errors";
 import { INJECTION_SYMBOL, NodeInjectable } from "./decorator";
-import { InjectionError } from "./errors";
-import { nodeInject } from "./injector";
+import { nodeInject } from "./injection";
 import { MultiNodeToken, NodeToken } from "./token";
 
 describe("nodeInject", () => {

@@ -1,6 +1,6 @@
+import { InjectionError } from "../errors";
+import type { iNodeTokenBaseOptions, Token } from "../types";
 import { INJECTION_SYMBOL } from "./decorator";
-import { InjectionError } from "./errors";
-import type { iNodeTokenBaseOptions, Token } from "./types";
 
 /**
  * Base class for dependency injection tokens.
