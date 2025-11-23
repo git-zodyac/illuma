@@ -3,7 +3,7 @@ import { INJECTION_SYMBOL } from "./decorator";
 import { InjectionError } from "./errors";
 import { nodeInject } from "./injector";
 import type { NodeBase } from "./token";
-import { isNodeBase, MultiNodeToken, NodeToken } from "./token";
+import { extractToken, isNodeBase, MultiNodeToken, NodeToken } from "./token";
 import type { ProtoNode, TreeNode } from "./tree-node";
 import {
   ProtoNodeMulti,
@@ -264,8 +264,8 @@ export class NodeContainer implements iDIContainer {
    */
   public get<T>(token: MultiNodeToken<T>): T[];
   public get<T>(token: NodeToken<T>): T;
-  public get<T>(token: NodeToken<T> | Ctor<T>): T;
-  public get<T>(provider: NodeBase<T> | Ctor<T>): T | T[] {
+  public get<T>(token: Ctor<T>): T;
+  public get<T>(provider: Token<T>): T | T[] {
     if (!this._bootstrapped || !this._rootNode) {
       throw InjectionError.notBootstrapped();
     }
@@ -293,21 +293,6 @@ export class NodeContainer implements iDIContainer {
 
     return treeNode.instance;
   }
-}
-
-function extractToken<T>(provider: Token<T>, isAlias = false): NodeBase<T> {
-  let token: NodeBase<T> | null = null;
-  if (typeof provider === "function" && INJECTION_SYMBOL in provider) {
-    const node = provider[INJECTION_SYMBOL];
-    if (isNodeBase<T>(node)) token = node;
-  } else if (isNodeBase<T>(provider)) token = provider;
-
-  if (!token) {
-    if (isAlias) throw InjectionError.invalidAlias(provider);
-    throw InjectionError.invalidProvider(JSON.stringify(provider));
-  }
-
-  return token;
 }
 
 function extractProvider<T>(provider: Providable<T>): NodeBase<T> | (() => T) {

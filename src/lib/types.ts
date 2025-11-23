@@ -91,11 +91,20 @@ export interface iDIContainer {
    * @param provider - The provider configuration
    */
   provide<T>(provider: Providable<T>): void;
+
   /**
    * Includes a provider set into the container.
    * @param group - A provider set created with createProviderSet
    */
   include(group: iNodeProviderSet): void;
+
+  /**
+   * Retrieves an instance for the given token.
+   * @template T - The type of value being retrieved
+   * @param token - The token or constructor to retrieve
+   * @returns The resolved instance
+   */
+  get<T>(token: Token<T>): T;
 }
 
 /**

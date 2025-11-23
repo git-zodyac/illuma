@@ -90,3 +90,9 @@ export function nodeInject<
 
   return injection;
 }
+
+/**
+ * Type of the {@link nodeInject} function.
+ * @internal
+ */
+export type NodeInjectFn = typeof nodeInject;

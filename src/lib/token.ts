@@ -1,4 +1,6 @@
-import type { iNodeTokenBaseOptions } from "./types";
+import { INJECTION_SYMBOL } from "./decorator";
+import { InjectionError } from "./errors";
+import type { iNodeTokenBaseOptions, Token } from "./types";
 
 /**
  * Base class for dependency injection tokens.
@@ -66,9 +68,41 @@ export class MultiNodeToken<T> extends NodeBase<T> {
  * @template T - The type of value the token represents
  * @param specimen - The value to check
  * @returns True if the specimen is a NodeToken or MultiNodeToken, false otherwise
+ * @internal
  */
 export function isNodeBase<T>(
   specimen: unknown,
 ): specimen is NodeToken<T> | MultiNodeToken<T> {
   return specimen instanceof NodeToken || specimen instanceof MultiNodeToken;
+}
+
+/**
+ * Extracts a valid NodeBase token from a given provider.
+ * If the provider is a class constructor decorated with @NodeInjectable, it retrieves the associated token.
+ * If the provider is already a NodeBase token, it returns it directly.
+ * Throws an InjectionError if the provider is invalid.
+ *
+ * @template T - The type of value the token represents
+ * @param provider - The provider to extract the token from
+ * @param isAlias - Whether the provider is being used as an alias
+ * @returns The extracted NodeBase token
+ * @throws {InjectionError} If the provider is invalid
+ * @internal
+ */
+export function extractToken<T>(
+  provider: Token<T>,
+  isAlias = false,
+): NodeToken<T> | MultiNodeToken<T> {
+  let token: NodeBase<T> | null = null;
+  if (typeof provider === "function" && INJECTION_SYMBOL in provider) {
+    const node = provider[INJECTION_SYMBOL];
+    if (isNodeBase<T>(node)) token = node;
+  } else if (isNodeBase<T>(provider)) token = provider;
+
+  if (!token || !isNodeBase<T>(token)) {
+    if (isAlias) throw InjectionError.invalidAlias(provider);
+    throw InjectionError.invalidProvider(JSON.stringify(provider));
+  }
+
+  return token;
 }

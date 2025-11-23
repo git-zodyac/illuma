@@ -42,7 +42,7 @@ bun add @zodyac/illuma
 - [🔧 Advanced Usage](#-advanced-usage)
 - [🧪 Testing](#-testing)
 - [📚 API Reference](#-api-reference)
-- [Troubleshooting](#-troubleshooting)
+- [⚠️ Troubleshooting](#-troubleshooting)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
 - [🔗 Links](#-links)
@@ -333,33 +333,50 @@ container.provide({
 
 ## 🧪 Testing
 
-Illuma makes testing easy with provider overrides:
+Illuma provides a dedicated testkit to make testing services with dependency injection simple and intuitive.
+
+### Quick Example
 
 ```typescript
-import { describe, it, expect } from '@jest/globals';
+import { createTestFactory } from '@zodyac/illuma/testkit';
+import { createProviderSet } from '@zodyac/illuma';
 
 describe('UserService', () => {
+  const createTest = createTestFactory({
+    target: UserService,
+    providers: createProviderSet(Logger),
+  });
+
   it('should fetch user', () => {
-    const container = new NodeContainer();
-    
-    // Use a mock logger
-    container.provide({
-      provide: Logger,
-      factory: () => ({
-        log: jest.fn()
-      })
-    });
-    
-    container.provide(UserService);
-    container.bootstrap();
-    
-    const service = container.get(UserService);
-    const user = service.getUser('123');
+    const { instance } = createTest();
+    const user = instance.getUser('123');
     
     expect(user).toBeDefined();
   });
 });
 ```
+
+### Testing with Mocks
+
+```typescript
+import { createTestFactory } from '@zodyac/illuma/testkit';
+
+const createTest = createTestFactory({
+  target: UserService,
+  providers: createProviderSet({
+    provide: Logger,
+    useClass: MockLogger,
+  }),
+});
+```
+
+For comprehensive testing documentation, examples, and best practices, see the **[Testing Guide (TESTKIT.md)](./TESTKIT.md)**.
+
+The testkit supports:
+- ✅ Isolated test environments with clean DI containers
+- ✅ Easy dependency mocking and stubbing
+- ✅ Works with Jest, Vitest, Mocha, Node Test Runner, and more
+- ✅ Full TypeScript support with type inference
 
 ## 📚 API Reference
 
