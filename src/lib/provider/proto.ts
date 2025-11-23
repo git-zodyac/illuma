@@ -1,10 +1,8 @@
 import type { NodeBase } from "../api";
 import { MultiNodeToken, NodeToken } from "../api";
-import type { InjectionNode } from "../container";
-import { InjectionContext } from "../container";
+import type { InjectionNode } from "../context";
+import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
-
-// Proto Tree Nodes
 
 export class ProtoNodeSingle<T = any> {
   // Metadata

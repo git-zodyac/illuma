@@ -1,4 +1,4 @@
-import { InjectionContext, InjectionNode } from "../container";
+import { InjectionContext, InjectionNode } from "../context";
 import { InjectionError } from "../errors";
 import { INJECTION_SYMBOL, NodeInjectable } from "./decorator";
 import { nodeInject } from "./injection";

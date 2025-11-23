@@ -1,5 +1,5 @@
 import type { NodeBase } from "../api";
-import { InjectionContext } from "../container";
+import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
 import type { ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
 
