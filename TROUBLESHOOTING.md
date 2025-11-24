@@ -537,9 +537,9 @@ For optional dependencies, use the `optional` flag:
 @NodeInjectable()
 class MyService {
   // ✅ Returns null if not found instead of throwing
-  private logger = nodeInject(Logger, { optional: true });
+  private readonly logger = nodeInject(Logger, { optional: true });
   
-  doSomething() {
+  public doSomething() {
     this.logger?.log('Doing something');
   }
 }
@@ -562,12 +562,12 @@ Two or more services depend on each other in a circular way.
 ```typescript
 @NodeInjectable()
 class ServiceA {
-  private b = nodeInject(ServiceB);
+  private readonly b = nodeInject(ServiceB);
 }
 
 @NodeInjectable()
 class ServiceB {
-  private a = nodeInject(ServiceA); // ❌ Circular!
+  private readonly a = nodeInject(ServiceA); // ❌ Circular!
 }
 
 container.provide(ServiceA);
@@ -587,12 +587,12 @@ class SharedService {
 
 @NodeInjectable()
 class ServiceA {
-  private shared = nodeInject(SharedService);
+  private readonly shared = nodeInject(SharedService);
 }
 
 @NodeInjectable()
 class ServiceB {
-  private shared = nodeInject(SharedService);
+  private readonly shared = nodeInject(SharedService);
 }
 // ✅ No circular dependency
 ```
@@ -639,8 +639,12 @@ You used `nodeInject()` outside of an injection context, or the dependency wasn'
 ```typescript
 @NodeInjectable()
 class MyService {
+  // ❌ Don't use conditional injection – function may produce uncertain result and break tracking
+  private readonly _untracked = someFunction() ? nodeInject(Logger) : null;
+  private readonly _unreachable = nodeInject(getUntrackedToken());
+
   // ❌ Don't call nodeInject in methods
-  doSomething() {
+  public doSomething() {
     const logger = nodeInject(Logger);
     logger.log('test');
   }
@@ -656,7 +660,7 @@ class MyService {
   // ✅ Inject in class field
   private logger = nodeInject(Logger);
   
-  doSomething() {
+  public doSomething() {
     // ✅ Use the injected dependency
     this.logger.log('test');
   }
@@ -671,7 +675,7 @@ class Logger { }
 
 @NodeInjectable()
 class MyService {
-  private logger = nodeInject(Logger);
+  private readonly logger = nodeInject(Logger);
 }
 
 // ✅ Provide all services
@@ -702,12 +706,12 @@ const logger = nodeInject(Logger);
 @NodeInjectable()
 class MyService {
   constructor() {
-    // ❌ This will throw [i501] - in constructor
+    // ✅ This is valid - in constructor
     const logger = nodeInject(Logger);
   }
   
   doSomething() {
-    // ❌ This will throw [i501] - in method
+    // ❌ This is not – will throw [i501]
     const logger = nodeInject(Logger);
   }
 }
@@ -720,9 +724,9 @@ Only use `nodeInject()` in class field initializers or factory functions:
 @NodeInjectable()
 class MyService {
   // ✅ In class field initializer
-  private logger = nodeInject(Logger);
+  private readonly logger = nodeInject(Logger);
   
-  doSomething() {
+  public doSomething() {
     // ✅ Use the injected field
     this.logger.log('Doing something');
   }
@@ -893,21 +897,21 @@ If you encounter an error not covered here or need additional assistance:
 
 ## Summary Table
 
-| Code | Error                       | Common Cause                       | Quick Fix                                |
-| ---- | --------------------------- | ---------------------------------- | ---------------------------------------- |
-| i100 | Duplicate Provider          | Same token provided twice          | Remove duplicate or use `MultiNodeToken` |
-| i101 | Duplicate Factory           | Factory already exists for token   | Only provide one factory per token       |
-| i102 | Invalid Constructor         | Missing `@NodeInjectable()`        | Add decorator to class                   |
-| i103 | Invalid Provider            | Wrong provider format              | Use valid provider syntax                |
-| i200 | Invalid Alias               | Invalid alias target type          | Use token or decorated class             |
-| i201 | Loop Alias                  | Self-referential alias             | Point alias to different token           |
-| i300 | Not Bootstrapped            | Getting before bootstrap           | Call `bootstrap()` first                 |
-| i301 | Container Bootstrapped      | Providing after bootstrap          | Provide before `bootstrap()`             |
-| i302 | Double Bootstrap            | Called `bootstrap()` twice         | Only bootstrap once                      |
-| i400 | Provider Not Found          | Token not registered               | Provide the token or use `optional`      |
-| i401 | Circular Dependency         | Services depend on each other      | Refactor to break cycle                  |
-| i500 | Untracked Injection         | `nodeInject()` used incorrectly    | Use in class field initializers only     |
-| i501 | Outside Context             | `nodeInject()` outside valid scope | Use only in fields/factories             |
-| i502 | Called Utils Outside        | Utilities called outside context   | Use only during instantiation            |
-| i503 | Instance Access Failed      | Instance not properly created      | Check factory/constructor logic          |
-| i504 | Access Failed               | Unknown access error               | Check provider configuration             |
+| Code | Error                  | Common Cause                       | Quick Fix                                |
+| ---- | ---------------------- | ---------------------------------- | ---------------------------------------- |
+| i100 | Duplicate Provider     | Same token provided twice          | Remove duplicate or use `MultiNodeToken` |
+| i101 | Duplicate Factory      | Factory already exists for token   | Only provide one factory per token       |
+| i102 | Invalid Constructor    | Missing `@NodeInjectable()`        | Add decorator to class                   |
+| i103 | Invalid Provider       | Wrong provider format              | Use valid provider syntax                |
+| i200 | Invalid Alias          | Invalid alias target type          | Use token or decorated class             |
+| i201 | Loop Alias             | Self-referential alias             | Point alias to different token           |
+| i300 | Not Bootstrapped       | Getting before bootstrap           | Call `bootstrap()` first                 |
+| i301 | Container Bootstrapped | Providing after bootstrap          | Provide before `bootstrap()`             |
+| i302 | Double Bootstrap       | Called `bootstrap()` twice         | Only bootstrap once                      |
+| i400 | Provider Not Found     | Token not registered               | Provide the token or use `optional`      |
+| i401 | Circular Dependency    | Services depend on each other      | Refactor to break cycle                  |
+| i500 | Untracked Injection    | `nodeInject()` used incorrectly    | Use in class field initializers only     |
+| i501 | Outside Context        | `nodeInject()` outside valid scope | Use only in fields/factories             |
+| i502 | Called Utils Outside   | Utilities called outside context   | Use only during instantiation            |
+| i503 | Instance Access Failed | Instance not properly created      | Check factory/constructor logic          |
+| i504 | Access Failed          | Unknown access error               | Check provider configuration             |

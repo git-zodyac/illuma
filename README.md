@@ -85,14 +85,14 @@ import { NodeContainer, NodeInjectable, nodeInject } from '@zodyac/illuma';
 // Define injectable services
 @NodeInjectable()
 class Logger {
-  log(message: string) {
+  public log(message: string) {
     console.log(`[LOG]: ${message}`);
   }
 }
 
 @NodeInjectable()
 class UserService {
-  private logger = nodeInject(Logger);
+  private readonly logger = nodeInject(Logger);
 
   getUser(id: string) {
     this.logger.log(`Fetching user ${id}`);
@@ -228,9 +228,12 @@ container.provide({
 container.provide({
   provide: DATABASE_TOKEN,
   factory: () => {
+    // Custom instantiation logic
+    // You can also inject other dependencies here
+    const config = container.get(CONFIG_TOKEN);
     return new Database({
-      host: 'localhost',
-      port: 5432
+      ...config,
+      connectionString: 'postgres://user:pass@localhost/db'
     });
   }
 });
@@ -270,10 +273,10 @@ container.provide({
 ```typescript
 @NodeInjectable()
 class EmailService {
-  private logger = nodeInject(Logger);
-  private config = nodeInject(CONFIG_TOKEN);
+  private readonly logger = nodeInject(Logger);
+  private readonly config = nodeInject(CONFIG_TOKEN);
 
-  sendEmail(to: string, message: string) {
+  public sendEmail(to: string, message: string) {
     this.logger.log(`Sending email to ${to}`);
     // Use this.config...
   }
@@ -285,9 +288,10 @@ class EmailService {
 ```typescript
 @NodeInjectable()
 class MyService {
-  private optionalLogger = nodeInject(Logger, { optional: true });
+  private readonly optionalLogger = nodeInject(Logger, { optional: true });
+  //               ^? Logger | null – infers nullability!
 
-  doSomething() {
+  public doSomething() {
     this.optionalLogger?.log('Doing something'); // May be null
   }
 }
@@ -328,7 +332,7 @@ import { Injector, nodeInject, NodeInjectable } from '@zodyac/illuma';
 class PluginManager {
   private readonly injector = nodeInject(Injector);
 
-  getPlugin(pluginToken: Token<any>) {
+  public getPlugin(pluginToken: Token<any>) {
     // Dynamically retrieve a dependency at runtime
     const plugin = this.injector.get(pluginToken);
     return plugin;
@@ -350,12 +354,12 @@ Illuma automatically detects and prevents circular dependencies:
 // This will throw an error
 @NodeInjectable()
 class ServiceA {
-  private b = nodeInject(ServiceB);
+  private readonly b = nodeInject(ServiceB);
 }
 
 @NodeInjectable()
 class ServiceB {
-  private a = nodeInject(ServiceA); // Circular!
+  private readonly a = nodeInject(ServiceA); // Circular!
 }
 ```
 
