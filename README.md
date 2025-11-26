@@ -41,7 +41,7 @@ bun add @zodyac/illuma
 - [📦 Provider Sets](#-provider-sets)
 - [🔧 Advanced Usage](#-advanced-usage)
 - [🧪 Testing](#-testing)
-- [📚 API Reference](#-api-reference)
+- [📚 API Reference](./docs/API.md)
 - [⚠️ Troubleshooting](#-troubleshooting)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
@@ -388,6 +388,91 @@ container.provide({
 });
 ```
 
+### Async Injection & Sub-Containers
+
+Illuma supports lazy-loaded dependencies and sub-containers through `injectAsync` and `injectChildrenAsync`. These utilities are useful for:
+
+- **Code splitting**: Load heavy dependencies only when needed
+- **Lazy initialization**: Defer expensive setup until required
+- **Dynamic modules**: Load plugins or features on-demand
+- **Sub-container management**: Create isolated DI contexts
+
+```typescript
+// In analysis-service.ts
+
+@NodeInjectable()
+export class AnalyticsService {
+  public track(event: string) {
+    console.log(`Tracking event: ${event}`);
+  }
+
+  public sendReport() {
+    console.log('Sending analytics report...');
+  }
+}
+
+// In feature-service.ts
+import { injectAsync, injectChildrenAsync } from '@zodyac/illuma';
+
+@NodeInjectable()
+class FeatureService {
+  // Lazy-load a heavy dependency
+  private readonly getAnalytics = injectAsync(
+    () => import('./analytics-service').then((m) => m.AnalyticsService),
+  );
+
+  async trackEvent(event: string) {
+    // Both methods will use the same instance (by default)
+    const analytics = await this.getAnalytics();
+    analytics.track(event);
+  }
+
+  async sendReport() {
+    // By default, this will be the same instance as above
+    const analytics = await this.getAnalytics();
+    analytics.sendReport();
+  }
+}
+```
+
+Or, create isolated sub-containers:
+
+```typescript
+
+// In plugins.ts
+import { createProviderSet } from '@zodyac/illuma';
+
+export function providePlugins() {
+  return createProviderSet(
+    {
+      provide: PLUGIN_TOKEN,
+      factory: () => new PluginA(),
+    },
+    {
+      provide: PLUGIN_TOKEN,
+      factory: () => new PluginB(),
+    }
+  );
+}
+
+// In plugin-host.ts 
+@NodeInjectable()
+class PluginHost {
+  // Create an isolated sub-container for plugins
+  private readonly getPluginContainer = injectChildrenAsync(
+    () => import('./plugins').then((m) => m.providePlugins()),
+  );
+
+  async executePlugins() {
+    const injector = await this.getPluginContainer();
+    const plugins = injector.get(PLUGIN_TOKEN);
+    // ... use plugins
+  }
+}
+```
+
+For comprehensive documentation on async injection patterns, see **[Async Injection Guide (INHERITANCE.md)](./docs/INHERITANCE.md)**.
+
 ## 🧪 Testing
 
 Illuma provides a dedicated testkit to make testing services with dependency injection simple and intuitive.
@@ -427,7 +512,7 @@ const createTest = createTestFactory({
 });
 ```
 
-For comprehensive testing documentation, examples, and best practices, see the **[Testing Guide (TESTKIT.md)](./TESTKIT.md)**.
+For comprehensive testing documentation, examples, and best practices, see the **[Testing Guide (TESTKIT.md)](./docs/TESTKIT.md)**.
 
 The testkit supports:
 - ✅ Isolated test environments with clean DI containers
@@ -437,32 +522,11 @@ The testkit supports:
 
 ## 📚 API Reference
 
-### NodeContainer
-
-- `provide<T>(provider: Providable<T>): void` - Register a provider
-- `include(providerSet: iNodeProviderSet): void` - Include a provider set
-- `bootstrap(): void` - Build the dependency tree
-- `get<T>(token: Token<T>): T` - Retrieve an instance
-
-### NodeToken
-
-- `new NodeToken<T>(name: string, options?: { factory?: () => T })` - Create a token
-
-### MultiNodeToken
-
-- `new MultiNodeToken<T>(name: string, options?: { factory?: () => T })` - Create a multi-token
-
-### nodeInject
-
-- `nodeInject<T>(token: Token<T>, options?: { optional?: boolean }): T` - Inject a dependency
-
-### Decorators
-
-- `@NodeInjectable()` - Mark a class as injectable
+For complete API documentation including detailed method signatures, parameters, and examples, see the **[API Reference](./docs/API.md)**.
 
 ## ⚠️ Troubleshooting
 
-See the [Error Reference](./TROUBLESHOOTING.md) for common issues and solutions.
+See the [Error Reference](./docs/TROUBLESHOOTING.md) for common issues and solutions.
 
 ## 🤝 Contributing
 

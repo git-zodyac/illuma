@@ -4,11 +4,11 @@ import {
   INJECTION_SYMBOL,
   isNodeBase,
   MultiNodeToken,
-  NodeToken,
   nodeInject,
+  NodeToken,
 } from "../api";
 import { InjectionError } from "../errors";
-import type { ProtoNode, TreeNode } from "../provider";
+import type { ProtoNode, TreeNode, UpstreamGetter } from "../provider";
 import {
   extractProvider,
   ProtoNodeMulti,
@@ -31,21 +31,25 @@ import { Injector, InjectorImpl } from "../utils";
  */
 export interface iContainerOptions {
   /**
-   * When true, logs the bootstrap time to the console based on performance.now() difference before and after bootstrap.
+   * When true, logs the bootstrap time to the console based on performance.now()
+   * difference before and after bootstrap.
    * @default false
    */
   measurePerformance?: boolean;
+  parent?: iDIContainer;
 }
 
 export class NodeContainer implements iDIContainer {
   private _bootstrapped = false;
   private _rootNode?: TreeRootNode;
 
+  private readonly _parent?: iDIContainer;
   private readonly _protoNodes = new Map<NodeToken<any>, ProtoNodeSingle<any>>();
-
   private readonly _multiProtoNodes = new Map<MultiNodeToken<any>, ProtoNodeMulti<any>>();
 
-  constructor(private readonly _opts?: iContainerOptions) {}
+  constructor(private readonly _opts?: iContainerOptions) {
+    this._parent = _opts?.parent;
+  }
 
   /**
    * Registers a provider in the container.
@@ -179,6 +183,18 @@ export class NodeContainer implements iDIContainer {
     group(this);
   }
 
+  public findNode<T>(token: Token<T>): TreeNode<T> | null {
+    if (!this._rootNode) return null;
+    const treeNode = this._rootNode.find(token);
+    return treeNode;
+  }
+
+  private _getFromParent<T>(token: Token<T>): TreeNode<T> | null {
+    if (!this._parent) return null;
+    const parentNode = this._parent as NodeContainer;
+    return parentNode.findNode(token);
+  }
+
   private _buildInjectionTree(): TreeRootNode {
     const root = new TreeRootNode();
     const cache = new Map<ProtoNode, TreeNode>();
@@ -188,6 +204,8 @@ export class NodeContainer implements iDIContainer {
       ...this._multiProtoNodes.values(),
     ];
 
+    const upstreamGetter: UpstreamGetter = this._getFromParent.bind(this);
+
     for (const node of nodes) {
       if (cache.has(node)) continue;
 
@@ -196,6 +214,7 @@ export class NodeContainer implements iDIContainer {
         cache,
         this._protoNodes,
         this._multiProtoNodes,
+        upstreamGetter,
       );
 
       root.addDependency(treeNode);
@@ -295,6 +314,9 @@ export class NodeContainer implements iDIContainer {
 
     const treeNode = this._rootNode.find(token);
     if (!treeNode) {
+      const upstream = this._getFromParent(token);
+      if (upstream) return upstream.instance;
+
       if (token instanceof MultiNodeToken) return [];
       throw InjectionError.notFound(token);
     }

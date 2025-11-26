@@ -1,0 +1,325 @@
+# 📚 API Reference
+
+Complete API documentation for Illuma's core classes, functions, and decorators.
+
+## Table of Contents
+
+- [NodeContainer](#nodecontainer)
+- [NodeToken](#nodetoken)
+- [MultiNodeToken](#multinodetoken)
+- [nodeInject](#nodeinject)
+- [Decorators](#decorators)
+- [Provider Types](#provider-types)
+- [Type Definitions](#type-definitions)
+
+## NodeContainer
+
+The main dependency injection container.
+
+### Methods
+
+#### `provide<T>(provider: Providable<T>): void`
+
+Register a provider in the container.
+
+**Parameters:**
+- `provider` - A provider configuration object or injectable class
+
+**Example:**
+```typescript
+import { NodeContainer, NodeToken } from '@zodyac/illuma';
+
+const container = new NodeContainer();
+const CONFIG = new NodeToken<Config>('CONFIG');
+
+container.provide({
+  provide: CONFIG,
+  value: { apiUrl: 'https://api.example.com' }
+});
+```
+
+#### `include(providerSet: iNodeProviderSet): void`
+
+Include a provider set in the container.
+
+**Parameters:**
+- `providerSet` - A provider set created with `createProviderSet()`
+
+**Example:**
+```typescript
+import { NodeContainer, createProviderSet } from '@zodyac/illuma';
+
+const providers = createProviderSet(
+  UserService,
+  DatabaseService
+);
+
+const container = new NodeContainer();
+container.include(providers);
+```
+
+#### `bootstrap(): void`
+
+Build the dependency tree and prepare the container for use. Must be called before retrieving instances with `get()`.
+
+**Example:**
+```typescript
+const container = new NodeContainer();
+container.provide(UserService);
+container.bootstrap();
+```
+
+#### `get<T>(token: Token<T>): T`
+
+Retrieve an instance from the container. Container must be bootstrapped first.
+
+**Parameters:**
+- `token` - The token or class to retrieve
+
+**Returns:** The resolved instance
+
+**Example:**
+```typescript
+const userService = container.get(UserService);
+```
+
+---
+
+## NodeToken
+
+A token for identifying dependencies that aren't classes.
+
+### Constructor
+
+#### `new NodeToken<T>(name: string, options?: { factory?: () => T })`
+
+Create a new token.
+
+**Parameters:**
+- `name` - Unique identifier for the token
+- `options.factory` - Optional factory function for default value
+
+**Example:**
+```typescript
+import { NodeToken } from '@zodyac/illuma';
+
+const API_URL = new NodeToken<string>('API_URL');
+
+const CONFIG = new NodeToken<Config>('CONFIG', {
+  factory: () => ({ apiUrl: 'https://api.example.com' })
+});
+```
+
+---
+
+## MultiNodeToken
+
+A token that can have multiple providers.
+
+### Constructor
+
+#### `new MultiNodeToken<T>(name: string, options?: { factory?: () => T })`
+
+Create a multi-token that accepts multiple providers.
+
+**Parameters:**
+- `name` - Unique identifier for the token
+- `options.factory` - Optional factory function for default value
+
+**Example:**
+```typescript
+import { MultiNodeToken } from '@zodyac/illuma';
+
+const PLUGINS = new MultiNodeToken<Plugin>('PLUGINS');
+
+container.provide({
+  provide: PLUGINS,
+  value: new LoggingPlugin()
+});
+
+container.provide({
+  provide: PLUGINS,
+  value: new MetricsPlugin()
+});
+
+container.bootstrap();
+
+// Injecting returns an array
+const plugins = container.get(PLUGINS); // Plugin[]
+```
+
+---
+
+## nodeInject
+
+Inject a dependency into a class or function.
+
+### Function Signature
+
+#### `nodeInject<T>(token: Token<T>, options?: { optional?: boolean }): T`
+
+Inject a dependency from the current injection context.
+
+**Parameters:**
+- `token` - The token or class to inject
+- `options.optional` - If `true`, returns `undefined` instead of throwing when dependency is not found
+
+**Returns:** The resolved instance (or `undefined` if optional and not found)
+
+**Example:**
+```typescript
+import { NodeInjectable, nodeInject } from '@zodyac/illuma';
+
+@NodeInjectable()
+class UserService {
+  private readonly logger = nodeInject(Logger);
+  private readonly cache = nodeInject(CacheService, { optional: true });
+
+  public getUser(id: string) {
+    this.logger.log(`Fetching user ${id}`);
+    return this.cache?.get(id) ?? this.fetchFromDb(id);
+  }
+}
+```
+
+---
+
+## Decorators
+
+### @NodeInjectable()
+
+Mark a class as injectable, allowing it to be provided and have dependencies injected.
+
+**Example:**
+```typescript
+import { NodeInjectable, nodeInject } from '@zodyac/illuma';
+
+@NodeInjectable()
+class DatabaseService {
+  public query(sql: string) {
+    // ...
+  }
+}
+
+@NodeInjectable()
+class UserRepository {
+  private readonly db = nodeInject(DatabaseService);
+
+  public findAll() {
+    return this.db.query('SELECT * FROM users');
+  }
+}
+```
+
+**Note:** Requires `experimentalDecorators: true` in `tsconfig.json`.
+
+**Alternative without decorators:**
+```typescript
+import { makeInjectable } from '@zodyac/illuma';
+
+class _UserService {
+  public getUser() {
+    return { id: 1, name: "John Doe" };
+  }
+}
+
+export type UserService = _UserService;
+export const UserService = makeInjectable(_UserService);
+```
+
+---
+
+## Provider Types
+
+### Class Provider
+
+Provide a class directly:
+
+```typescript
+@NodeInjectable()
+class UserService {}
+
+container.provide(UserService);
+```
+
+### Value Provider
+
+Provide a pre-instantiated value:
+
+```typescript
+const CONFIG = new NodeToken<Config>('CONFIG');
+
+container.provide({
+  provide: CONFIG,
+  value: { apiUrl: 'https://api.example.com' }
+});
+```
+
+### Factory Provider
+
+Provide a factory function:
+
+```typescript
+container.provide({
+  provide: UserService,
+  factory: () => new UserService()
+});
+```
+
+### Class Reference Provider
+
+Use a different class implementation:
+
+```typescript
+container.provide({
+  provide: Logger,
+  useClass: ConsoleLogger
+});
+```
+
+### Alias Provider
+
+Create an alias to another token:
+
+```typescript
+const PRIMARY_DB = new NodeToken<Database>('PRIMARY_DB');
+const DB = new NodeToken<Database>('DB');
+
+container.provide({
+  provide: DB,
+  alias: PRIMARY_DB
+});
+
+container.bootstrap();
+
+const dbInstance = container.get(DB); // Resolves to PRIMARY_DB instance
+```
+
+---
+
+## Type Definitions
+
+### Token<T>
+
+A token that can be used to identify a dependency. Can be a class constructor or a `NodeToken`/`MultiNodeToken`.
+
+### Providable<T>
+
+A provider configuration or injectable class.
+
+### iNodeProviderSet
+
+A set of providers created with `createProviderSet()`.
+
+---
+
+## Related Documentation
+
+- [Main README](../README.md) - Getting started and core concepts
+- [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
+- [Async Injection Guide](./INHERITANCE.md) - Advanced async patterns
+- [Testing Guide](./TESTKIT.md) - Testing with Illuma
+
+## Questions or Feedback?
+
+If you have questions about the API, please [open an issue](https://github.com/git-zodyac/illuma/issues) on GitHub.

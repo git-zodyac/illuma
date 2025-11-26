@@ -399,6 +399,6 @@ The object returned by test factory functions.
 
 ## 🔗 See Also
 
-- [Main Documentation](./README.md)
+- [Main Documentation](../README.md)
+- [API Reference](./API.md)
 - [Troubleshooting](./TROUBLESHOOTING.md)
-- [API Reference](./README.md#-api-reference)

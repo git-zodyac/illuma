@@ -1,16 +1,19 @@
 import { MultiNodeToken, NodeToken } from "../api";
-import type { InjectionNode } from "../container";
+import type { InjectionNode } from "../context";
 import { InjectionError } from "../errors";
+import type { Token } from "../types";
 import type { ProtoNode } from "./proto";
 import { ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
 import type { TreeNode } from "./tree-node";
 import { TreeNodeMulti, TreeNodeSingle, TreeNodeTransparent } from "./tree-node";
 
+export type UpstreamGetter = <T>(token: Token<T>) => TreeNode<T> | null;
 export function resolveTreeNode<T>(
   proto: ProtoNode<T>,
   cache: Map<ProtoNode, TreeNode>,
   singleNodes: Map<NodeToken<any>, ProtoNodeSingle>,
   multiNodes: Map<MultiNodeToken<any>, ProtoNodeMulti>,
+  upstreamGetter?: UpstreamGetter,
   path: (ProtoNodeSingle | ProtoNodeMulti)[] = [],
 ): TreeNode<T> {
   const cached = cache.get(proto);
@@ -34,12 +37,22 @@ export function resolveTreeNode<T>(
           ? multiNodes.get(injection.token)
           : undefined;
 
-    if (!treeNode && !injection.optional) {
-      throw InjectionError.notFound(injection.token);
+    if (!treeNode) {
+      const upstreamNode = upstreamGetter?.(injection.token) ?? null;
+      if (!upstreamNode && !injection.optional) {
+        throw InjectionError.notFound(injection.token);
+      }
     }
 
     if (treeNode) {
-      const child = resolveTreeNode(treeNode, cache, singleNodes, multiNodes, newPath);
+      const child = resolveTreeNode(
+        treeNode,
+        cache,
+        singleNodes,
+        multiNodes,
+        upstreamGetter,
+        newPath,
+      );
       nextNode.addDependency(child);
     }
   }
@@ -54,6 +67,12 @@ export function resolveTreeNode<T>(
     resolvedNode = nextNode;
   } else if (proto instanceof ProtoNodeMulti) {
     const nextNode = new TreeNodeMulti<T>(proto);
+    const parentNodes = upstreamGetter?.(proto.token);
+
+    if (parentNodes instanceof TreeNodeMulti) {
+      nextNode.addDependency(parentNodes);
+    }
+
     for (const single of proto.singleNodes) {
       let proto = singleNodes.get(single);
       if (!proto) {
@@ -61,7 +80,14 @@ export function resolveTreeNode<T>(
         singleNodes.set(single, proto);
       }
 
-      const resolved = resolveTreeNode(proto, cache, singleNodes, multiNodes, newPath);
+      const resolved = resolveTreeNode(
+        proto,
+        cache,
+        singleNodes,
+        multiNodes,
+        upstreamGetter,
+        newPath,
+      );
 
       nextNode.addDependency(resolved);
     }
@@ -73,8 +99,14 @@ export function resolveTreeNode<T>(
         multiNodes.set(multi, proto);
       }
 
-      const resolved = resolveTreeNode(proto, cache, singleNodes, multiNodes, newPath);
-
+      const resolved = resolveTreeNode(
+        proto,
+        cache,
+        singleNodes,
+        multiNodes,
+        upstreamGetter,
+        newPath,
+      );
       nextNode.addDependency(resolved);
     }
 
@@ -84,6 +116,7 @@ export function resolveTreeNode<T>(
         cache,
         singleNodes,
         multiNodes,
+        upstreamGetter,
         newPath,
       );
 

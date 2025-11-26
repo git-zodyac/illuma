@@ -2,22 +2,29 @@ import type { MultiNodeToken } from "../api";
 import { NodeToken } from "../api/token";
 import type { Ctor, iDIContainer, Token } from "../types";
 
-/**
- * Injector implementation that allows retrieving instances from the parent DI container.
- */
-export class InjectorImpl {
-  constructor(private readonly _container: iDIContainer) {}
+export interface iInjector {
+  /** The DI container associated with this injector */
+  readonly container: iDIContainer;
+
   /**
    * Retrieves an instance for the given token.
    * @template T - The type of value being retrieved
    * @param token - The token or constructor to retrieve
    * @returns The resolved instance
    */
-  public get<T>(token: MultiNodeToken<T>): T[];
-  public get<T>(token: NodeToken<T>): T;
-  public get<T>(token: Ctor<T>): T;
+  get<T>(token: MultiNodeToken<T>): T[];
+  get<T>(token: NodeToken<T>): T;
+  get<T>(token: Ctor<T>): T;
+}
+
+/**
+ * Injector implementation that allows retrieving instances from the parent DI container.
+ */
+export class InjectorImpl implements iInjector {
+  constructor(public readonly container: iDIContainer) {}
+
   public get<T>(token: Token<T>): T | T[] {
-    return this._container.get<T>(token as any);
+    return this.container.get<T>(token as any);
   }
 }
 
@@ -37,4 +44,4 @@ export class InjectorImpl {
  * }
  * ```
  */
-export const Injector = new NodeToken<InjectorImpl>("Injector");
+export const Injector = new NodeToken<iInjector>("Injector");
