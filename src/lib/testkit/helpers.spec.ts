@@ -5,6 +5,7 @@ import {
   NodeToken,
   nodeInject,
 } from "../api";
+import { InjectionError } from "../errors";
 import { createTestFactory } from "./helpers";
 
 describe("Testkit Helpers", () => {
@@ -172,4 +173,15 @@ describe("Testkit Helpers", () => {
     const spectator = createProvider();
     expect(spectator.instance.getValue()).toBe("mocked-dependency");
   });
+
+  it("should rethrow error from container when token is missing and not optional", () => {
+    const token = new NodeToken("token", { factory: () => "val" });
+    const createProvider = createTestFactory({ target: token });
+    const spectator = createProvider();
+
+    const missingToken = new NodeToken("missing");
+    expect(() => spectator.nodeInject(missingToken)).toThrow(InjectionError);
+  });
 });
+
+

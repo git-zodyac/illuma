@@ -196,6 +196,32 @@ describe("NodeContainer", () => {
       container.bootstrap();
       expect(() => container.get(token)).toThrow(InjectionError.notFound(token));
     });
+
+    it("should allow declaring token first then providing value", () => {
+      const container = new NodeContainer();
+      const token = new NodeToken<string>("token");
+
+      container.provide(token); // Declare
+      container.provide({ provide: token, value: "value" }); // Provide
+
+      container.bootstrap();
+      expect(container.get(token)).toBe("value");
+    });
+
+    it("should allow declaring token first then providing class", () => {
+      const container = new NodeContainer();
+      const token = new NodeToken<{ value: string }>("token");
+
+      class TestClass {
+        value = "value";
+      }
+
+      container.provide(token); // Declare
+      container.provide({ provide: token, useClass: TestClass }); // Provide
+
+      container.bootstrap();
+      expect(container.get(token).value).toBe("value");
+    });
   });
 
   describe("makeInjectable helper", () => {
@@ -359,7 +385,7 @@ describe("NodeContainer", () => {
       const TestClass = makeInjectable(_TestClass);
 
       container.provide(TestClass);
-      expect(() => container.provide(TestClass)).toThrow();
+      expect(() => container.provide(_TestClass)).toThrow();
     });
 
     it("should work identically to NodeInjectable decorator", () => {
@@ -945,6 +971,16 @@ describe("NodeContainer", () => {
       child.bootstrap();
 
       expect(child.get(token)).toBe("child-value");
+    });
+  });
+
+  describe("Performance measurement", () => {
+    it("should measure performance when enabled", () => {
+      const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+      const container = new NodeContainer({ measurePerformance: true });
+      container.bootstrap();
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Bootstrapped in"));
+      consoleSpy.mockRestore();
     });
   });
 });

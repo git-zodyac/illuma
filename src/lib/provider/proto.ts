@@ -15,7 +15,7 @@ export class ProtoNodeSingle<T = any> {
   constructor(token: NodeToken<T>, factory?: () => T) {
     this.token = token;
     this.factory = factory ?? null;
-    this.injections = InjectionContext.scan(factory);
+    this.injections = factory ? InjectionContext.scan(factory) : new Set();
   }
 
   public hasFactory(): boolean {
@@ -25,6 +25,11 @@ export class ProtoNodeSingle<T = any> {
   public setFactory(factory: () => T): void {
     if (this.factory) throw InjectionError.duplicateFactory(this.token);
     this.factory = factory;
+
+    const scanned = InjectionContext.scan(factory);
+    for (const injection of scanned) {
+      this.injections.add(injection);
+    }
   }
 
   public toString(): string {
@@ -79,3 +84,9 @@ export type ProtoNode<T = any> =
   | ProtoNodeSingle<T>
   | ProtoNodeMulti<T>
   | ProtoNodeTransparent<T>;
+
+export function isNotTransparentProto(
+  proto: ProtoNode,
+): proto is ProtoNodeSingle | ProtoNodeMulti {
+  return !(proto instanceof ProtoNodeTransparent);
+}

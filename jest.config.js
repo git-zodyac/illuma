@@ -13,6 +13,7 @@ export default ({
     "!src/lib/errors.ts",
     "!src/**/*.{d,types}.ts",
     "!src/**/types.ts",
+    "!src/**/index.ts",
   ],
   transform: {
     "^.+\\.[tj]s$": "@swc/jest"

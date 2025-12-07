@@ -1,140 +1,161 @@
 import { MultiNodeToken, NodeToken } from "../api";
-import type { InjectionNode } from "../context";
 import { InjectionError } from "../errors";
 import type { Token } from "../types";
 import type { ProtoNode } from "./proto";
-import { ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
+import {
+  isNotTransparentProto,
+  ProtoNodeMulti,
+  ProtoNodeSingle,
+  ProtoNodeTransparent,
+} from "./proto";
 import type { TreeNode } from "./tree-node";
 import { TreeNodeMulti, TreeNodeSingle, TreeNodeTransparent } from "./tree-node";
 
 export type UpstreamGetter = <T>(token: Token<T>) => TreeNode<T> | null;
+interface StackFrame {
+  readonly proto: ProtoNode;
+  readonly node: TreeNode;
+  processed: boolean;
+}
+
+function createTreeNode(p: ProtoNode): TreeNode {
+  if (p instanceof ProtoNodeSingle) return new TreeNodeSingle(p);
+  if (p instanceof ProtoNodeMulti) return new TreeNodeMulti(p);
+  if (p instanceof ProtoNodeTransparent) return new TreeNodeTransparent(p);
+  throw new Error("Unknown ProtoNode type");
+}
+
 export function resolveTreeNode<T>(
-  proto: ProtoNode<T>,
+  rootProto: ProtoNode<T>,
   cache: Map<ProtoNode, TreeNode>,
   singleNodes: Map<NodeToken<any>, ProtoNodeSingle>,
   multiNodes: Map<MultiNodeToken<any>, ProtoNodeMulti>,
   upstreamGetter?: UpstreamGetter,
-  path: (ProtoNodeSingle | ProtoNodeMulti)[] = [],
 ): TreeNode<T> {
-  const cached = cache.get(proto);
-  if (cached) return cached;
+  const inCache = cache.get(rootProto);
+  if (inCache) return inCache;
 
-  const newPath = [...path];
-  if (!(proto instanceof ProtoNodeTransparent)) {
-    newPath.push(proto);
+  const rootNode = createTreeNode(rootProto);
 
-    if (path.includes(proto)) {
-      const loopPath = newPath.map((n) => n.token);
-      throw InjectionError.circularDependency(proto.token, loopPath);
+  const stack: StackFrame[] = [{ proto: rootProto, node: rootNode, processed: false }];
+  const visiting = new Set<ProtoNode>();
+
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1];
+    const { proto, node } = frame;
+
+    if (frame.processed) {
+      stack.pop();
+      visiting.delete(proto);
+      cache.set(proto, node);
+      continue;
     }
-  }
 
-  function resolveInjection(nextNode: TreeNode<T>, injection: InjectionNode<any>) {
-    const treeNode =
-      injection.token instanceof NodeToken
-        ? singleNodes.get(injection.token)
-        : injection.token instanceof MultiNodeToken
-          ? multiNodes.get(injection.token)
-          : undefined;
+    if (visiting.has(proto) && isNotTransparentProto(proto)) {
+      const path = stack.map((f) => f.proto).filter((p) => isNotTransparentProto(p));
+      const index = path.indexOf(proto);
+      const cycle = path.slice(index);
+      const cycleTokens = cycle.map((p) => p.token);
+      throw InjectionError.circularDependency(proto.token, cycleTokens);
+    }
 
-    if (!treeNode) {
-      const upstreamNode = upstreamGetter?.(injection.token) ?? null;
-      if (!upstreamNode && !injection.optional) {
-        throw InjectionError.notFound(injection.token);
+    visiting.add(proto);
+    frame.processed = true;
+
+    const deps: (ProtoNode | TreeNode)[] = [];
+
+    function addDependency(token: Token<any>, optional = false) {
+      if (token instanceof NodeToken) {
+        const p = singleNodes.get(token);
+        if (p) {
+          deps.push(p);
+          return;
+        }
+      } else if (token instanceof MultiNodeToken) {
+        const p = multiNodes.get(token);
+        if (p) {
+          deps.push(p);
+          return;
+        }
+      }
+
+      const upstream = upstreamGetter?.(token);
+      if (upstream) {
+        deps.push(upstream);
+        return;
+      }
+
+      if (!optional) throw InjectionError.notFound(token);
+    }
+
+    if (proto instanceof ProtoNodeSingle || proto instanceof ProtoNodeTransparent) {
+      for (const injection of proto.injections) {
+        addDependency(injection.token, injection.optional);
       }
     }
 
-    if (treeNode) {
-      const child = resolveTreeNode(
-        treeNode,
-        cache,
-        singleNodes,
-        multiNodes,
-        upstreamGetter,
-        newPath,
-      );
-      nextNode.addDependency(child);
+    if (proto instanceof ProtoNodeMulti) {
+      const parentNodes = upstreamGetter?.(proto.token);
+      if (parentNodes instanceof TreeNodeMulti) {
+        node.addDependency(parentNodes);
+      }
+
+      for (const single of proto.singleNodes) {
+        let p = singleNodes.get(single);
+        if (!p) {
+          p = new ProtoNodeSingle(single);
+          singleNodes.set(single, p);
+        }
+
+        deps.push(p);
+      }
+
+      for (const multi of proto.multiNodes) {
+        let p = multiNodes.get(multi);
+        if (!p) {
+          p = new ProtoNodeMulti(multi);
+          multiNodes.set(multi, p);
+        }
+        deps.push(p);
+      }
+
+      for (const transparent of proto.transparentNodes) {
+        deps.push(transparent);
+      }
+    }
+
+    for (const dep of deps) {
+      if (
+        dep instanceof TreeNodeSingle ||
+        dep instanceof TreeNodeMulti ||
+        dep instanceof TreeNodeTransparent
+      ) {
+        node.addDependency(dep);
+        continue;
+      }
+
+      const depProto = dep as ProtoNode;
+
+      const cached = cache.get(depProto);
+      if (cached) {
+        node.addDependency(cached);
+        continue;
+      }
+
+      if (visiting.has(depProto) && isNotTransparentProto(depProto)) {
+        const path = stack.map((f) => f.proto).filter((p) => isNotTransparentProto(p));
+        const index = path.indexOf(depProto);
+        const cycle = [...path.slice(index), depProto];
+        const cycleTokens = cycle.map((p) => p.token);
+
+        throw InjectionError.circularDependency(depProto.token, cycleTokens);
+      }
+
+      const childNode = createTreeNode(depProto);
+      node.addDependency(childNode);
+      stack.push({ proto: depProto, node: childNode, processed: false });
     }
   }
 
-  let resolvedNode: TreeNode<T>;
-  if (proto instanceof ProtoNodeSingle) {
-    const nextNode = new TreeNodeSingle<T>(proto);
-    for (const injection of proto.injections) {
-      resolveInjection(nextNode, injection);
-    }
-
-    resolvedNode = nextNode;
-  } else if (proto instanceof ProtoNodeMulti) {
-    const nextNode = new TreeNodeMulti<T>(proto);
-    const parentNodes = upstreamGetter?.(proto.token);
-
-    if (parentNodes instanceof TreeNodeMulti) {
-      nextNode.addDependency(parentNodes);
-    }
-
-    for (const single of proto.singleNodes) {
-      let proto = singleNodes.get(single);
-      if (!proto) {
-        proto = new ProtoNodeSingle<T>(single);
-        singleNodes.set(single, proto);
-      }
-
-      const resolved = resolveTreeNode(
-        proto,
-        cache,
-        singleNodes,
-        multiNodes,
-        upstreamGetter,
-        newPath,
-      );
-
-      nextNode.addDependency(resolved);
-    }
-
-    for (const multi of proto.multiNodes) {
-      let proto = multiNodes.get(multi);
-      if (!proto) {
-        proto = new ProtoNodeMulti<T>(multi);
-        multiNodes.set(multi, proto);
-      }
-
-      const resolved = resolveTreeNode(
-        proto,
-        cache,
-        singleNodes,
-        multiNodes,
-        upstreamGetter,
-        newPath,
-      );
-      nextNode.addDependency(resolved);
-    }
-
-    for (const transparent of proto.transparentNodes) {
-      const resolved = resolveTreeNode(
-        transparent,
-        cache,
-        singleNodes,
-        multiNodes,
-        upstreamGetter,
-        newPath,
-      );
-
-      nextNode.addDependency(resolved);
-    }
-
-    resolvedNode = nextNode;
-  } else if (proto instanceof ProtoNodeTransparent) {
-    const nextNode = new TreeNodeTransparent<T>(proto);
-    for (const injection of proto.injections) {
-      resolveInjection(nextNode, injection);
-    }
-
-    resolvedNode = nextNode;
-  }
-
-  // biome-ignore lint/style/noNonNullAssertion: This is not possible, cause we identify proto type above.
-  const res = resolvedNode!;
-  cache.set(proto, res);
-  return res;
+  return rootNode;
 }

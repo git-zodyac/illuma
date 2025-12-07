@@ -3,12 +3,31 @@ import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
 import type { ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
 
-type DependencyPool = Map<NodeBase<any>, TreeNode<any>>;
+export type DependencyPool = Map<NodeBase<any>, TreeNode<any>>;
+
+function retrieverFactory<T>(
+  node: NodeBase<T>,
+  deps: DependencyPool,
+  transparentDeps: Set<TreeNodeTransparent>,
+) {
+  return (token: NodeBase<T>, optional: boolean | undefined): T | null => {
+    const depNode = deps.get(token);
+    if (!depNode && !optional) {
+      const transparent = Array.from(transparentDeps).find(
+        (n) => "proto" in n && n.proto.parent.token === token,
+      );
+      if (transparent) return transparent.instance;
+      throw InjectionError.untracked(token, node);
+    }
+
+    return depNode?.instance ?? null;
+  };
+}
 
 // Tree Nodes
 export class TreeRootNode {
   private readonly _deps: Set<TreeNode<any>> = new Set();
-  private readonly _treePool = new Map<NodeBase<any>, TreeNode>();
+  private readonly _treePool: DependencyPool = new Map();
 
   public get dependencies(): Set<TreeNode<any>> {
     return this._deps;
@@ -20,13 +39,7 @@ export class TreeRootNode {
 
   public instantiate(): void {
     for (const dep of this._deps) {
-      const childPool = dep.instantiate();
-
-      for (const [key, value] of childPool) {
-        if (this._treePool.has(key)) continue;
-        this._treePool.set(key, value);
-      }
-
+      dep.instantiate(this._treePool);
       if ("token" in dep.proto) this._treePool.set(dep.proto.token, dep);
     }
   }
@@ -43,7 +56,8 @@ export class TreeRootNode {
 }
 
 export class TreeNodeSingle<T = any> {
-  private readonly _deps: Set<TreeNode<any>> = new Set();
+  private readonly _transparent: Set<TreeNodeTransparent> = new Set();
+  private readonly _deps: DependencyPool = new Map();
   private _instance: T | null = null;
   private _resolved = false;
 
@@ -55,48 +69,26 @@ export class TreeNodeSingle<T = any> {
     return this._instance as T;
   }
 
-  public get dependencies(): Set<TreeNode<any>> {
-    return this._deps;
-  }
-
   constructor(public readonly proto: ProtoNodeSingle<T>) {}
 
   public addDependency(node: TreeNode<any>): void {
-    this._deps.add(node);
+    if (node instanceof TreeNodeTransparent) this._transparent.add(node);
+    else this._deps.set(node.proto.token, node);
   }
 
-  public instantiate(): DependencyPool {
-    if (this._resolved) return new Map();
+  public instantiate(pool?: DependencyPool): void {
+    if (this._resolved) return;
 
-    const pool: DependencyPool = new Map();
+    for (const node of this._deps.values()) node.instantiate(pool);
+    for (const dep of this._transparent) dep.instantiate(pool);
 
-    // Instantiate dependencies first
-    const depMap = new Map<NodeBase<any>, TreeNode<any>>();
-    for (const dep of this._deps) {
-      if ("token" in dep.proto) depMap.set(dep.proto.token, dep);
-      const childPool = dep.instantiate();
-
-      for (const [key, value] of childPool) {
-        if (pool.has(key)) continue;
-        pool.set(key, value);
-      }
-    }
-
-    // Instantiate self
+    const retriever = retrieverFactory(this.proto.token, this._deps, this._transparent);
     const factory = this.proto.factory ?? this.proto.token.opts?.factory;
     if (!factory) throw InjectionError.notFound(this.proto.token);
-    this._instance = InjectionContext.instantiate(factory, (token, optional) => {
-      const depNode = depMap.get(token);
-      if (!depNode && !optional) {
-        throw InjectionError.untracked(token, this.proto.token);
-      }
-
-      return depNode?.instance ?? null;
-    });
+    this._instance = InjectionContext.instantiate(factory, retriever);
 
     this._resolved = true;
-    pool.set(this.proto.token, this);
-    return pool;
+    if (pool) pool.set(this.proto.token, this);
   }
 
   public toString(): string {
@@ -105,58 +97,37 @@ export class TreeNodeSingle<T = any> {
 }
 
 export class TreeNodeTransparent<T = any> {
-  private readonly _deps = new Set<TreeNode<any>>();
+  private readonly _transparent = new Set<TreeNodeTransparent>();
+  private readonly _deps: DependencyPool = new Map();
   private _instance: T | null = null;
   private _resolved = false;
 
   public get instance(): T {
     if (!this._resolved) throw InjectionError.accessFailed();
-
     return this._instance as T;
-  }
-
-  public get dependencies(): Set<TreeNode<any>> {
-    return this._deps;
   }
 
   constructor(public readonly proto: ProtoNodeTransparent<T>) {}
 
   public addDependency(node: TreeNode<any>): void {
-    this._deps.add(node);
+    if (node instanceof TreeNodeTransparent) this._transparent.add(node);
+    else this._deps.set(node.proto.token, node);
   }
 
-  public instantiate(): DependencyPool {
-    if (this._resolved) return new Map();
+  public instantiate(pool?: DependencyPool): void {
+    if (this._resolved) return;
 
-    const pool: DependencyPool = new Map();
+    for (const dep of this._transparent) dep.instantiate(pool);
+    for (const node of this._deps.values()) node.instantiate(pool);
 
-    // Instantiate dependencies first
-    const depMap = new Map<NodeBase<any>, TreeNode<any>>();
-    for (const dep of this._deps) {
-      if ("token" in dep.proto) depMap.set(dep.proto.token, dep);
-      const childPool = dep.instantiate();
-
-      for (const [key, value] of childPool) {
-        if (pool.has(key)) continue;
-        pool.set(key, value);
-      }
-    }
-
-    // Instantiate self
-    this._instance = InjectionContext.instantiate(
-      this.proto.factory,
-      (token, optional) => {
-        const depNode = depMap.get(token);
-        if (!depNode && !optional) {
-          throw InjectionError.untracked(token, this.proto.parent.token);
-        }
-
-        return depNode?.instance ?? null;
-      },
+    const retriever = retrieverFactory(
+      this.proto.parent.token,
+      this._deps,
+      this._transparent,
     );
 
+    this._instance = InjectionContext.instantiate(this.proto.factory, retriever);
     this._resolved = true;
-    return pool;
   }
 
   public toString(): string {
@@ -166,26 +137,16 @@ export class TreeNodeTransparent<T = any> {
 
 export class TreeNodeMulti<T = any> {
   private readonly _deps = new Set<TreeNode<any>>();
-  public readonly instance = [] as T[];
+  public readonly instance: T[] = [];
   private _resolved = false;
-
-  public get dependencies(): Set<TreeNode<any>> {
-    return this._deps;
-  }
 
   constructor(public readonly proto: ProtoNodeMulti<T>) {}
 
-  public instantiate(): DependencyPool {
-    if (this._resolved) return new Map();
+  public instantiate(pool?: DependencyPool): void {
+    if (this._resolved) return;
 
-    const pool: DependencyPool = new Map();
     for (const dep of this._deps) {
-      const childPool = dep.instantiate();
-
-      for (const [key, value] of childPool) {
-        if (pool.has(key)) continue;
-        pool.set(key, value);
-      }
+      dep.instantiate(pool);
 
       if (dep instanceof TreeNodeSingle) {
         this.instance.push(dep.instance);
@@ -197,14 +158,11 @@ export class TreeNodeMulti<T = any> {
     }
 
     this._resolved = true;
-    pool.set(this.proto.token, this);
-    return pool;
+    if (pool) pool.set(this.proto.token, this);
   }
 
   public addDependency(...nodes: TreeNode[]): void {
-    for (const node of nodes) {
-      this._deps.add(node);
-    }
+    for (const node of nodes) this._deps.add(node);
   }
 
   public toString(): string {

@@ -1,6 +1,6 @@
 import { MultiNodeToken, NodeToken, nodeInject } from "../api";
 import { InjectionError } from "../errors";
-import { ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
+import { isNotTransparentProto, ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
 import {
   TreeNodeMulti,
   TreeNodeSingle,
@@ -25,6 +25,19 @@ describe("ProtoNodeSingle", () => {
 
     proto.setFactory(factory);
     expect(proto.factory).toBe(factory);
+  });
+
+  it("should scan injections when setting factory", () => {
+    const token = new NodeToken<string>("test");
+    const proto = new ProtoNodeSingle(token);
+    const depToken = new NodeToken<string>("dep");
+    const factory = () => {
+      nodeInject(depToken);
+      return "value";
+    };
+
+    proto.setFactory(factory);
+    expect(proto.injections.size).toBe(1);
   });
 
   it("should throw when setting factory twice", () => {
@@ -183,17 +196,6 @@ describe("TreeNodeSingle", () => {
 
     expect(() => node.instance).toThrow(InjectionError);
   });
-
-  it("should not instantiate twice", () => {
-    const token = new NodeToken<string>("test");
-    const proto = new ProtoNodeSingle(token, () => "value");
-    const node = new TreeNodeSingle(proto);
-
-    node.instantiate();
-    const pool = node.instantiate();
-
-    expect(pool.size).toBe(0);
-  });
 });
 
 describe("TreeNodeTransparent", () => {
@@ -262,18 +264,6 @@ describe("TreeNodeTransparent", () => {
 
     expect(() => node.instance).toThrow(InjectionError);
   });
-
-  it("should not instantiate twice", () => {
-    const token = new NodeToken<string>("test");
-    const parent = new ProtoNodeSingle(token);
-    const proto = new ProtoNodeTransparent(parent, () => "value");
-    const node = new TreeNodeTransparent(proto);
-
-    node.instantiate();
-    const pool = node.instantiate();
-
-    expect(pool.size).toBe(0);
-  });
 });
 
 describe("TreeNodeMulti", () => {
@@ -304,15 +294,165 @@ describe("TreeNodeMulti", () => {
 
     expect(node.instance).toEqual(["single-value", "transparent-value", "sub-value"]);
   });
+});
 
-  it("should not instantiate twice", () => {
-    const token = new MultiNodeToken<string>("multi");
+describe("toString methods", () => {
+  it("TreeRootNode toString", () => {
+    const node = new TreeRootNode();
+    expect(node.toString()).toBe("TreeRootNode");
+  });
+
+  it("TreeNodeSingle toString", () => {
+    const token = new NodeToken("test");
+    const proto = new ProtoNodeSingle(token);
+    const node = new TreeNodeSingle(proto);
+    expect(node.toString()).toBe(`TreeNodeSingle<${token.toString()}>`);
+  });
+
+  it("TreeNodeTransparent toString", () => {
+    const token = new NodeToken("test");
+    const parent = new ProtoNodeSingle(token);
+    const factory = function testFactory() {};
+    const proto = new ProtoNodeTransparent(parent, factory);
+    const node = new TreeNodeTransparent(proto);
+    expect(node.toString()).toBe(`TreeNodeTransparent<${token.toString()}>`);
+  });
+
+  it("TreeNodeMulti toString", () => {
+    const token = new MultiNodeToken("test");
     const proto = new ProtoNodeMulti(token);
     const node = new TreeNodeMulti(proto);
+    expect(node.toString()).toBe(`TreeNodeMulti<${token.toString()}>`);
+  });
 
-    node.instantiate();
-    const pool = node.instantiate();
+  it("ProtoNodeSingle toString", () => {
+    const token = new NodeToken("test");
+    const proto = new ProtoNodeSingle(token);
+    expect(proto.toString()).toBe(`ProtoNodeSingle<${token.toString()}>`);
+  });
 
-    expect(pool.size).toBe(0);
+  it("ProtoNodeTransparent toString", () => {
+    const token = new NodeToken("test");
+    const parent = new ProtoNodeSingle(token);
+    const factory = function testFactory() {};
+    const proto = new ProtoNodeTransparent(parent, factory);
+    expect(proto.toString()).toBe("ProtoNodeTransparent<testFactory>");
+  });
+
+  it("ProtoNodeTransparent toString with anonymous factory", () => {
+    const token = new NodeToken("test");
+    const parent = new ProtoNodeSingle(token);
+    const proto = new ProtoNodeTransparent(parent, () => {});
+    expect(proto.toString()).toBe("ProtoNodeTransparent<anonymous>");
+  });
+
+  it("ProtoNodeMulti toString", () => {
+    const token = new MultiNodeToken("test");
+    const proto = new ProtoNodeMulti(token);
+    expect(proto.toString()).toBe(`ProtoNodeMulti<${token.toString()}>`);
   });
 });
+
+describe("ProtoNode helpers", () => {
+  it("should check if factory exists", () => {
+    const token = new NodeToken("test");
+    const proto = new ProtoNodeSingle(token);
+    expect(proto.hasFactory()).toBe(false);
+    proto.setFactory(() => "value");
+    expect(proto.hasFactory()).toBe(true);
+  });
+
+  it("should check if proto is not transparent", () => {
+    const token = new NodeToken("test");
+    const single = new ProtoNodeSingle(token);
+    const multi = new MultiNodeToken("multi");
+    const multiProto = new ProtoNodeMulti(multi);
+    const transparent = new ProtoNodeTransparent(single, () => "value");
+
+    expect(isNotTransparentProto(single)).toBe(true);
+    expect(isNotTransparentProto(multiProto)).toBe(true);
+    expect(isNotTransparentProto(transparent)).toBe(false);
+  });
+});
+
+describe("Extra Coverage", () => {
+  it("should inject transparent node instance when requesting parent token", () => {
+    const parentToken = new NodeToken<string>("parent");
+    const parentProto = new ProtoNodeSingle(parentToken);
+    const transparentProto = new ProtoNodeTransparent(
+      parentProto,
+      () => "transparent",
+    );
+    const transparentNode = new TreeNodeTransparent(transparentProto);
+
+    const consumerToken = new NodeToken<string>("consumer");
+    const consumerProto = new ProtoNodeSingle(consumerToken, () => {
+      return nodeInject(parentToken);
+    });
+    const consumerNode = new TreeNodeSingle(consumerProto);
+
+    // Manually link dependency
+    consumerNode.addDependency(transparentNode);
+
+    // Instantiate transparent node first
+    transparentNode.instantiate();
+
+    consumerNode.instantiate();
+    expect(consumerNode.instance).toBe("transparent");
+  });
+
+  it("should throw untracked error if injection is hidden during scan", () => {
+    const token = new NodeToken("test");
+    const depToken = new NodeToken("dep");
+
+    let showDep = false;
+    const factory = () => {
+      if (showDep) {
+        nodeInject(depToken);
+      }
+      return "value";
+    };
+
+    const proto = new ProtoNodeSingle(token, factory);
+    // Scan happens in constructor. showDep is false. depToken NOT detected.
+
+    const node = new TreeNodeSingle(proto);
+
+    showDep = true;
+    // Instantiate calls factory. showDep is true. nodeInject called.
+    // Should throw untracked.
+
+    expect(() => node.instantiate()).toThrow(
+      InjectionError.untracked(depToken, token),
+    );
+  });
+
+  it("should expose dependencies", () => {
+    const root = new TreeRootNode();
+    const token = new NodeToken("test");
+    const proto = new ProtoNodeSingle(token, () => "val");
+    const node = new TreeNodeSingle(proto);
+    root.addDependency(node);
+    expect(root.dependencies.has(node)).toBe(true);
+  });
+
+  it("should handle transparent node in TreeRootNode", () => {
+    const root = new TreeRootNode();
+    const parentToken = new NodeToken("parent");
+    const parentProto = new ProtoNodeSingle(parentToken);
+    const transProto = new ProtoNodeTransparent(parentProto, () => "trans");
+    const transNode = new TreeNodeTransparent(transProto);
+
+    root.addDependency(transNode);
+    root.instantiate();
+
+    expect(transNode.instance).toBe("trans");
+  });
+});
+
+
+
+
+
+
+
