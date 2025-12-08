@@ -1,5 +1,6 @@
 import {
   createProviderSet,
+  extractToken,
   INJECTION_SYMBOL,
   MultiNodeToken,
   makeInjectable,
@@ -696,7 +697,7 @@ describe("NodeContainer", () => {
     });
   });
 
-  describe("Array providers", () => {
+  describe("array providers", () => {
     it("should provide an array of providers", () => {
       const container = new NodeContainer();
       const tokenA = new NodeToken<string>("TOKEN_A");
@@ -1489,6 +1490,266 @@ describe("NodeContainer", () => {
 
       expect(instance.dep.value).toBe("dependency");
       expect(instance.custom).toBe("custom-value");
+    });
+  });
+
+  describe("allocation tracking", () => {
+    it("should track allocations for single nodes", () => {
+      const container = new NodeContainer();
+      const tokenA = new NodeToken<string>("A");
+      const tokenB = new NodeToken<string>("B");
+
+      container.provide({
+        provide: tokenA,
+        value: "a",
+      });
+
+      container.provide({
+        provide: tokenB,
+        factory: () => {
+          nodeInject(tokenA);
+          return "b";
+        },
+      });
+
+      container.bootstrap();
+
+      const rootNode = (container as any)._rootNode;
+      const nodeA = rootNode.find(tokenA);
+      const nodeB = rootNode.find(tokenB);
+
+      expect(nodeA.allocations).toBe(1); // Used by B
+      expect(nodeB.allocations).toBe(0); // Not used by anyone
+    });
+
+    it("should track allocations for multi nodes", () => {
+      const container = new NodeContainer();
+      const pluginToken = new MultiNodeToken<string>("Plugin");
+      const serviceToken = new NodeToken<string>("Service");
+
+      container.provide({
+        provide: pluginToken,
+        value: "plugin-1",
+      });
+
+      container.provide({
+        provide: pluginToken,
+        value: "plugin-2",
+      });
+
+      container.provide({
+        provide: serviceToken,
+        factory: () => {
+          const plugins = nodeInject(pluginToken);
+          return `service-${plugins.length}`;
+        },
+      });
+
+      container.bootstrap();
+
+      const rootNode = (container as any)._rootNode;
+      const pluginNode = rootNode.find(pluginToken);
+      const serviceNode = rootNode.find(serviceToken);
+
+      expect(pluginNode.allocations).toBe(1); // Used by service
+      expect(serviceNode.allocations).toBe(0); // Not used
+    });
+
+    it("should track multiple allocations", () => {
+      const container = new NodeContainer();
+      const sharedToken = new NodeToken<string>("Shared");
+      const serviceA = new NodeToken<string>("ServiceA");
+      const serviceB = new NodeToken<string>("ServiceB");
+      const serviceC = new NodeToken<string>("ServiceC");
+
+      container.provide({
+        provide: sharedToken,
+        value: "shared",
+      });
+
+      container.provide({
+        provide: serviceA,
+        factory: () => {
+          nodeInject(sharedToken);
+          return "a";
+        },
+      });
+
+      container.provide({
+        provide: serviceB,
+        factory: () => {
+          nodeInject(sharedToken);
+          return "b";
+        },
+      });
+
+      container.provide({
+        provide: serviceC,
+        factory: () => {
+          nodeInject(serviceA);
+          nodeInject(serviceB);
+          return "c";
+        },
+      });
+
+      container.bootstrap();
+
+      const rootNode = (container as any)._rootNode;
+      const sharedNode = rootNode.find(sharedToken);
+      const nodeA = rootNode.find(serviceA);
+      const nodeB = rootNode.find(serviceB);
+      const nodeC = rootNode.find(serviceC);
+
+      expect(sharedNode.allocations).toBe(2); // Used by A and B
+      expect(nodeA.allocations).toBe(1); // Used by C
+      expect(nodeB.allocations).toBe(1); // Used by C
+      expect(nodeC.allocations).toBe(0); // Not used
+    });
+
+    it("should track allocations with injectable classes", () => {
+      const container = new NodeContainer();
+
+      @NodeInjectable()
+      class Logger {
+        log() {
+          return "logging";
+        }
+      }
+
+      @NodeInjectable()
+      class Database {
+        query() {
+          return "querying";
+        }
+      }
+
+      @NodeInjectable()
+      class UserService {
+        public readonly logger = nodeInject(Logger);
+        public readonly db = nodeInject(Database);
+      }
+
+      container.provide(Logger);
+      container.provide(Database);
+      container.provide(UserService);
+
+      container.bootstrap();
+
+      const rootNode = (container as any)._rootNode;
+      const loggerNode = rootNode.find(extractToken(Logger));
+      const dbNode = rootNode.find(extractToken(Database));
+      const userServiceNode = rootNode.find(extractToken(UserService));
+
+      expect(loggerNode.allocations).toBe(1);
+      expect(dbNode.allocations).toBe(1);
+      expect(userServiceNode.allocations).toBe(0);
+    });
+  });
+
+  describe("diagnostics", () => {
+    let consoleLogSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleLogSpy.mockRestore();
+    });
+
+    it("should not log diagnostics when disabled", () => {
+      const container = new NodeContainer({ diagnostics: false });
+      const token = new NodeToken<string>("Token");
+
+      container.provide({
+        provide: token,
+        value: "value",
+      });
+
+      container.bootstrap();
+
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining("Diagnostics"),
+      );
+    });
+
+    it("should log diagnostics when enabled", () => {
+      const container = new NodeContainer({ diagnostics: true });
+      const token = new NodeToken<string>("Token");
+
+      container.provide({
+        provide: token,
+        value: "value",
+      });
+
+      container.bootstrap();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[Illuma] 🧹 Diagnostics:"),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining("Total:"));
+    });
+
+    it("should report unused nodes in diagnostics", () => {
+      const container = new NodeContainer({ diagnostics: true });
+      const usedToken = new NodeToken<string>("Used");
+      const unusedToken = new NodeToken<string>("Unused");
+
+      container.provide({
+        provide: usedToken,
+        value: "used",
+      });
+
+      container.provide({
+        provide: unusedToken,
+        value: "unused",
+      });
+
+      container.bootstrap();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("were not used while bootstrap:"),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining("Unused"));
+    });
+
+    it("should not list nodes with allocations as unused", () => {
+      const container = new NodeContainer({ diagnostics: true });
+      const usedToken = new NodeToken<string>("Used");
+      const consumerToken = new NodeToken<string>("Consumer");
+
+      container.provide({
+        provide: usedToken,
+        value: "used",
+      });
+
+      container.provide({
+        provide: consumerToken,
+        factory: () => {
+          nodeInject(usedToken);
+          return "consumer";
+        },
+      });
+
+      container.bootstrap();
+
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(expect.stringContaining("Used"));
+    });
+
+    it("should work with multi-node tokens in diagnostics", () => {
+      const container = new NodeContainer({ diagnostics: true });
+      const multiToken = new MultiNodeToken<string>("Multi");
+
+      container.provide({ provide: multiToken, value: "item1" });
+      container.provide({ provide: multiToken, value: "item2" });
+
+      container.bootstrap();
+
+      // Multi token should be unused if not injected (+ Injector = 2 total)
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("2 were not used"),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining("Multi"));
     });
   });
 });

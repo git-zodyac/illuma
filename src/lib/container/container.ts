@@ -37,6 +37,7 @@ export interface iContainerOptions {
    * @default false
    */
   measurePerformance?: boolean;
+  diagnostics?: boolean;
   parent?: iDIContainer;
 }
 
@@ -272,6 +273,17 @@ export class NodeContainer implements iDIContainer {
     if (this._opts?.measurePerformance) {
       const duration = end - start;
       console.log(`[Illuma] 🚀 Bootstrapped in ${duration.toFixed(2)} ms`);
+    }
+
+    if (this._opts?.diagnostics) {
+      const allNodes = this._rootNode.dependencies.size;
+      const unusedNodes = Array.from(this._rootNode.dependencies).filter(
+        (node) => node.allocations === 0,
+      );
+      console.log(`[Illuma] 🧹 Diagnostics:`);
+      console.log(`  Total: ${allNodes} node(s)`);
+      console.log(`  ${unusedNodes.length} were not used while bootstrap:`);
+      for (const node of unusedNodes) console.log(`    - ${node.toString()}`);
     }
   }
 

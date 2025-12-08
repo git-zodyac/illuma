@@ -60,6 +60,7 @@ export class TreeNodeSingle<T = any> {
   private readonly _deps: DependencyPool = new Map();
   private _instance: T | null = null;
   private _resolved = false;
+  public allocations = 0;
 
   public get instance(): T {
     if (!this._resolved) {
@@ -74,6 +75,7 @@ export class TreeNodeSingle<T = any> {
   public addDependency(node: TreeNode<any>): void {
     if (node instanceof TreeNodeTransparent) this._transparent.add(node);
     else this._deps.set(node.proto.token, node);
+    node.allocations++;
   }
 
   public instantiate(pool?: DependencyPool): void {
@@ -101,6 +103,7 @@ export class TreeNodeTransparent<T = any> {
   private readonly _deps: DependencyPool = new Map();
   private _instance: T | null = null;
   private _resolved = false;
+  public allocations = 0;
 
   public get instance(): T {
     if (!this._resolved) throw InjectionError.accessFailed();
@@ -112,6 +115,8 @@ export class TreeNodeTransparent<T = any> {
   public addDependency(node: TreeNode<any>): void {
     if (node instanceof TreeNodeTransparent) this._transparent.add(node);
     else this._deps.set(node.proto.token, node);
+
+    node.allocations++;
   }
 
   public instantiate(pool?: DependencyPool): void {
@@ -139,6 +144,7 @@ export class TreeNodeMulti<T = any> {
   private readonly _deps = new Set<TreeNode<any>>();
   public readonly instance: T[] = [];
   private _resolved = false;
+  public allocations = 0;
 
   constructor(public readonly proto: ProtoNodeMulti<T>) {}
 
@@ -162,7 +168,10 @@ export class TreeNodeMulti<T = any> {
   }
 
   public addDependency(...nodes: TreeNode[]): void {
-    for (const node of nodes) this._deps.add(node);
+    for (const node of nodes) {
+      this._deps.add(node);
+      node.allocations++;
+    }
   }
 
   public toString(): string {
