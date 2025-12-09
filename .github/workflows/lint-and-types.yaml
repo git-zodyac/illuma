@@ -1,4 +1,4 @@
-name: Lint
+name: Lint and Type Check
 
 on:
   push:
@@ -39,3 +39,7 @@ jobs:
       # Run linter
       - name: Lint
         run: yarn lint
+
+      # Run type check
+      - name: Type Check
+        run: tsc --noEmit

@@ -8,7 +8,7 @@ import type {
   iNodeValueProvider,
   Token,
 } from "../types";
-import { INJECTION_SYMBOL } from "./decorator";
+import { getInjectableToken, isInjectable } from "./decorator";
 
 /**
  * Base class for dependency injection tokens.
@@ -134,8 +134,8 @@ export function extractToken<T>(
   isAlias = false,
 ): NodeToken<T> | MultiNodeToken<T> {
   let token: NodeBase<T> | null = null;
-  if (typeof provider === "function" && INJECTION_SYMBOL in provider) {
-    const node = provider[INJECTION_SYMBOL];
+  if (isInjectable(provider)) {
+    const node = getInjectableToken(provider);
     if (isNodeBase<T>(node)) token = node;
   } else if (isNodeBase<T>(provider)) token = provider;
 

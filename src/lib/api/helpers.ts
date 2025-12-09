@@ -1,5 +1,5 @@
 import type { Ctor, iDIContainer, iNodeProvider, iNodeProviderSet } from "../types";
-import { INJECTION_SYMBOL } from "./decorator";
+import { isInjectable } from "./decorator";
 
 /**
  * Symbol used to mark provider set functions.
@@ -47,12 +47,16 @@ export function createProviderSet(
       }
 
       if (typeof provider === "function") {
-        if (INJECTION_SYMBOL in provider) {
+        if (isProviderSet(provider)) {
+          provider(container);
+          continue;
+        }
+
+        if (isInjectable(provider)) {
           container.provide(provider);
           continue;
         }
 
-        if (isProviderSet(provider)) provider(container);
         continue;
       }
 

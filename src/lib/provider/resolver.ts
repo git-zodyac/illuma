@@ -1,4 +1,5 @@
-import { MultiNodeToken, NodeToken } from "../api";
+import type { NodeBase } from "../api";
+import { getInjectableToken, isInjectable, MultiNodeToken, NodeToken } from "../api";
 import { InjectionError } from "../errors";
 import type { Token } from "../types";
 import type { ProtoNode } from "./proto";
@@ -85,7 +86,14 @@ export function resolveTreeNode<T>(
         return;
       }
 
-      if (!optional) throw InjectionError.notFound(token);
+      if (!optional) {
+        if (isInjectable(token)) {
+          const nodeToken = getInjectableToken(token);
+          throw InjectionError.notFound(nodeToken);
+        }
+
+        throw InjectionError.notFound(token as NodeBase<any>);
+      }
     }
 
     if (proto instanceof ProtoNodeSingle || proto instanceof ProtoNodeTransparent) {

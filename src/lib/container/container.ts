@@ -1,7 +1,8 @@
 import type { NodeBase } from "../api";
 import {
   extractToken,
-  INJECTION_SYMBOL,
+  getInjectableToken,
+  isInjectable,
   isNodeBase,
   MultiNodeToken,
   NodeToken,
@@ -110,9 +111,9 @@ export class NodeContainer implements iDIContainer {
 
     // Handle constructors
     if (typeof provider === "function") {
-      if (!(INJECTION_SYMBOL in provider)) throw InjectionError.invalidCtor(provider);
+      if (!isInjectable<T>(provider)) throw InjectionError.invalidCtor(provider);
 
-      const token = provider[INJECTION_SYMBOL];
+      const token = getInjectableToken<T>(provider);
       if (!(token instanceof NodeToken)) throw InjectionError.invalidCtor(provider);
 
       const existing = this._protoNodes.get(token);
@@ -193,7 +194,14 @@ export class NodeContainer implements iDIContainer {
 
   public findNode<T>(token: Token<T>): TreeNode<T> | null {
     if (!this._rootNode) return null;
-    const treeNode = this._rootNode.find(token);
+    if (!this._bootstrapped) return null;
+
+    if (isInjectable<T>(token)) {
+      const node = getInjectableToken<T>(token);
+      return this._rootNode.find(node);
+    }
+
+    const treeNode = this._rootNode.find(token as NodeBase<T>);
     return treeNode;
   }
 
@@ -318,11 +326,8 @@ export class NodeContainer implements iDIContainer {
 
     let token: NodeBase<T> | null = null;
     if (typeof provider === "function") {
-      if (!(INJECTION_SYMBOL in provider)) {
-        throw InjectionError.invalidCtor(provider);
-      }
-
-      token = provider[INJECTION_SYMBOL] as NodeBase<T>;
+      if (!isInjectable<T>(provider)) throw InjectionError.invalidCtor(provider);
+      token = getInjectableToken<T>(provider);
     }
 
     if (isNodeBase<T>(provider)) token = provider;

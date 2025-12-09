@@ -67,3 +67,21 @@ export function makeInjectable<T>(ctor: Ctor<T>): Ctor<T> {
   (ctor as any)[INJECTION_SYMBOL] = nodeToken;
   return ctor;
 }
+
+/** @internal */
+export function isInjectable<T>(ctor: unknown): ctor is Ctor<T> & {
+  [INJECTION_SYMBOL]: NodeToken<T>;
+} {
+  return (
+    typeof ctor === "function" &&
+    INJECTION_SYMBOL in ctor &&
+    ctor[INJECTION_SYMBOL] instanceof NodeToken
+  );
+}
+
+/** @internal */
+export function getInjectableToken<T>(
+  ctor: Ctor<T> & { [INJECTION_SYMBOL]: NodeToken<T> },
+): NodeToken<T> {
+  return ctor[INJECTION_SYMBOL];
+}

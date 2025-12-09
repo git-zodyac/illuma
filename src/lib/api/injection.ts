@@ -1,7 +1,7 @@
 import { InjectionContext, InjectionNode } from "../context";
 import { InjectionError } from "../errors";
 import type { ExtractInjectedType, iNodeInjectorOptions } from "../types";
-import { INJECTION_SYMBOL } from "./decorator";
+import { getInjectableToken, isInjectable } from "./decorator";
 import type { MultiNodeToken, NodeToken } from "./token";
 import { isNodeBase } from "./token";
 
@@ -68,9 +68,7 @@ export function nodeInject<
       ) => unknown) = NodeToken<unknown>,
 >(provider: N, options?: iNodeInjectorOptions) {
   let token: any = provider;
-  if (typeof provider === "function" && INJECTION_SYMBOL in provider) {
-    token = provider[INJECTION_SYMBOL];
-  }
+  if (isInjectable(provider)) token = getInjectableToken(provider);
 
   if (!InjectionContext.contextOpen) {
     throw InjectionError.outsideContext(token);
