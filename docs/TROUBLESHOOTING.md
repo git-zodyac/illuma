@@ -1,14 +1,37 @@
-# Illuma Error Reference
+# ⚠️ Error Reference
 
 This document provides detailed information about all error codes in Illuma and how to resolve them.
 
 ## Table of Contents
 
+- [Quick Reference](#quick-reference)
 - [Provider Errors (i100-i103)](#provider-errors)
 - [Alias Errors (i200-i201)](#alias-errors)
 - [Bootstrap Errors (i300-i302)](#bootstrap-errors)
 - [Retrieval Errors (i400-i401)](#retrieval-errors)
 - [Instantiation Errors (i500-i504)](#instantiation-errors)
+- [Debugging Tips](#debugging-tips)
+
+## Quick Reference
+
+| Code | Error | Quick Fix |
+|------|-------|-----------|
+| i100 | Duplicate Provider | Remove duplicate or use `MultiNodeToken` |
+| i101 | Duplicate Factory | Only provide one factory per token |
+| i102 | Invalid Constructor | Add `@NodeInjectable()` decorator |
+| i103 | Invalid Provider | Use valid provider syntax |
+| i200 | Invalid Alias | Use token or decorated class |
+| i201 | Loop Alias | Point alias to different token |
+| i300 | Not Bootstrapped | Call `bootstrap()` first |
+| i301 | Container Bootstrapped | Provide before `bootstrap()` |
+| i302 | Double Bootstrap | Only bootstrap once |
+| i400 | Provider Not Found | Provide the token or use `optional` |
+| i401 | Circular Dependency | Refactor to break cycle |
+| i500 | Untracked Injection | Use in class field initializers only |
+| i501 | Outside Context | Use only in fields/factories |
+| i502 | Called Utils Outside | Use only during instantiation |
+| i503 | Instance Access Failed | Check factory/constructor logic |
+| i504 | Access Failed | Check provider configuration |
 
 ---
 
@@ -77,7 +100,7 @@ You attempted to provide a factory for a token that already has a factory define
 ```typescript
 @NodeInjectable()
 class MyService {
-  value = 'original';
+  public value = 'original';
 }
 
 container.provide(MyService);
@@ -95,17 +118,11 @@ Only provide one factory per token:
 ```typescript
 @NodeInjectable()
 class MyService {
-  value = 'original';
+  public value = 'original';
 }
 
-// ✅ Option 1: Just provide the class
+// ✅ Only provide the class once
 container.provide(MyService);
-
-// ✅ Option 2: Provide with a custom factory (don't provide the class separately)
-container.provide({
-  provide: MyService,
-  factory: () => new MyService()
-});
 ```
 
 For testing/overriding, use a different token:
@@ -142,7 +159,7 @@ You tried to provide a class directly to the container without marking it as inj
 **Example:**
 ```typescript
 class MyService {
-  doSomething() { }
+  public doSomething() { }
 }
 
 // ❌ This will throw [i102]
@@ -155,7 +172,7 @@ Add the `@NodeInjectable()` decorator to your class:
 ```typescript
 @NodeInjectable()
 class MyService {
-  doSomething() { }
+  public doSomething() { }
 }
 
 // ✅ This works
@@ -582,7 +599,7 @@ Refactor to break the circular dependency:
 ```typescript
 @NodeInjectable()
 class SharedService {
-  sharedMethod() { }
+  public sharedMethod() { }
 }
 
 @NodeInjectable()
@@ -603,7 +620,7 @@ class ServiceB {
 class ServiceA {
   private callbacks: Array<() => void> = [];
   
-  registerCallback(cb: () => void) {
+  public registerCallback(cb: () => void) {
     this.callbacks.push(cb);
   }
 }
@@ -658,7 +675,7 @@ Only use `nodeInject()` during class initialization (in class field initializers
 @NodeInjectable()
 class MyService {
   // ✅ Inject in class field
-  private logger = nodeInject(Logger);
+  private readonly logger = nodeInject(Logger);
   
   public doSomething() {
     // ✅ Use the injected dependency
@@ -710,7 +727,7 @@ class MyService {
     const logger = nodeInject(Logger);
   }
   
-  doSomething() {
+  public doSomething() {
     // ❌ This is not – will throw [i501]
     const logger = nodeInject(Logger);
   }
@@ -860,8 +877,8 @@ If you encounter resolution errors, trace your dependencies:
 @NodeInjectable()
 class FailingService {
   // List all dependencies
-  private dep1 = nodeInject(Dependency1);
-  private dep2 = nodeInject(Dependency2);
+  private readonly dep1 = nodeInject(Dependency1);
+  private readonly dep2 = nodeInject(Dependency2);
 }
 
 // Make sure each dependency is provided
@@ -886,32 +903,16 @@ container.get(OnlyTheFailingService);
 
 ## Getting Help
 
-If you encounter an error not covered here or need additional assistance:
+If you encounter an error not covered here:
 
-1. **Check the error code**: Each error has a unique code (see table below)
-2. **Review this document**: Find your error code and follow the solution
-3. **Create a minimal reproduction**: Isolate the issue in a small example
+1. **Check the error code** in the quick reference table
+2. **Review the detailed section** for your error code
+3. **Create a minimal reproduction** to isolate the issue
 4. **Report issues**: [GitHub Issues](https://github.com/git-zodyac/illuma/issues)
 
----
+## Related documentation
 
-## Summary Table
-
-| Code | Error                  | Common Cause                       | Quick Fix                                |
-| ---- | ---------------------- | ---------------------------------- | ---------------------------------------- |
-| i100 | Duplicate Provider     | Same token provided twice          | Remove duplicate or use `MultiNodeToken` |
-| i101 | Duplicate Factory      | Factory already exists for token   | Only provide one factory per token       |
-| i102 | Invalid Constructor    | Missing `@NodeInjectable()`        | Add decorator to class                   |
-| i103 | Invalid Provider       | Wrong provider format              | Use valid provider syntax                |
-| i200 | Invalid Alias          | Invalid alias target type          | Use token or decorated class             |
-| i201 | Loop Alias             | Self-referential alias             | Point alias to different token           |
-| i300 | Not Bootstrapped       | Getting before bootstrap           | Call `bootstrap()` first                 |
-| i301 | Container Bootstrapped | Providing after bootstrap          | Provide before `bootstrap()`             |
-| i302 | Double Bootstrap       | Called `bootstrap()` twice         | Only bootstrap once                      |
-| i400 | Provider Not Found     | Token not registered               | Provide the token or use `optional`      |
-| i401 | Circular Dependency    | Services depend on each other      | Refactor to break cycle                  |
-| i500 | Untracked Injection    | `nodeInject()` used incorrectly    | Use in class field initializers only     |
-| i501 | Outside Context        | `nodeInject()` outside valid scope | Use only in fields/factories             |
-| i502 | Called Utils Outside   | Utilities called outside context   | Use only during instantiation            |
-| i503 | Instance Access Failed | Instance not properly created      | Check factory/constructor logic          |
-| i504 | Access Failed          | Unknown access error               | Check provider configuration             |
+- [Getting Started](./GETTING_STARTED.md) - Setup and basic concepts
+- [Providers Guide](./PROVIDERS.md) - Provider types
+- [Tokens Guide](./TOKENS.md) - Using tokens
+- [API Reference](./API.md) - Complete API documentation

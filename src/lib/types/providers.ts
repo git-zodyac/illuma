@@ -87,3 +87,5 @@ export type Providable<T> =
   | iNodeProvider<T>
   | Ctor<T>
   | Providable<unknown>[];
+
+export type Provider = NodeBase<unknown> | iNodeProvider<unknown> | Ctor<unknown>;

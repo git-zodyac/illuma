@@ -1,39 +1,41 @@
-# 🧪 Testkit
+# 🧪 Testing Guide
 
-The Illuma testkit provides framework-agnostic utilities for testing components that use dependency injection. It makes it easy to set up isolated test environments with controlled dependencies.
+The Illuma testkit provides framework-agnostic utilities for testing components that use dependency injection.
 
-## 📦 Installation
+## Table of contents
 
-The testkit is included with Illuma. Import it from the `/testkit` subpath:
+- [🧪 Testing Guide](#-testing-guide)
+  - [Table of contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Quick start](#quick-start)
+    - [Basic service testing](#basic-service-testing)
+  - [Testing with dependencies](#testing-with-dependencies)
+  - [Mocking dependencies](#mocking-dependencies)
+  - [Testing with tokens](#testing-with-tokens)
+  - [Testing Multi-Token dependencies](#testing-multi-token-dependencies)
+  - [Optional dependencies](#optional-dependencies)
+  - [Framework examples](#framework-examples)
+    - [Vitest](#vitest)
+    - [Mocha](#mocha)
+    - [Node test runner](#node-test-runner)
+  - [API Reference](#api-reference)
+    - [`createTestFactory<T>(config)`](#createtestfactorytconfig)
+    - [`TestFactoryFn<T>`](#testfactoryfnt)
+    - [`Spectator<T>`](#spectatort)
+  - [Best practices](#best-practices)
+  - [Related documentation](#related-documentation)
+
+## Installation
+
+The testkit is included with Illuma. Import from the `/testkit` subpath:
 
 ```typescript
 import { createTestFactory } from '@zodyac/illuma/testkit';
 ```
 
-## 🎯 Core Concepts
+## Quick start
 
-The testkit revolves around the **test factory** pattern. A test factory creates isolated instances of your services with their dependencies properly injected, making it easy to test them in isolation.
-
-### `createTestFactory(config)`
-
-Creates a test factory function that sets up a clean DI container for each test.
-
-**Parameters:**
-- `config.target` - The token or class to be tested
-- `config.providers?` - Optional provider set (created with `createProviderSet`) to include in the test container
-
-**Returns:** A `TestFactoryFn<T>` that creates a `Spectator<T>` when called
-
-### `Spectator<T>`
-
-The spectator object provides access to your tested instance and the ability to inject additional dependencies:
-
-- `instance` - The instantiated service/class being tested
-- `nodeInject(token, options?)` - Inject dependencies from the test container
-
-## 🚀 Quick Start
-
-### Basic Service Testing
+### Basic service testing
 
 ```typescript
 import { NodeInjectable } from '@zodyac/illuma';
@@ -41,7 +43,7 @@ import { createTestFactory } from '@zodyac/illuma/testkit';
 
 @NodeInjectable()
 class UserService {
-  getUser() {
+  public getUser() {
     return { id: 1, name: 'John Doe' };
   }
 }
@@ -57,7 +59,7 @@ describe('UserService', () => {
 });
 ```
 
-### Testing with Dependencies
+## Testing with dependencies
 
 ```typescript
 import { NodeInjectable, nodeInject, createProviderSet } from '@zodyac/illuma';
@@ -65,16 +67,16 @@ import { createTestFactory } from '@zodyac/illuma/testkit';
 
 @NodeInjectable()
 class DatabaseService {
-  query(sql: string) {
+  public query(sql: string) {
     return [{ id: 1, name: 'Alice' }];
   }
 }
 
 @NodeInjectable()
 class UserRepository {
-  private db = nodeInject(DatabaseService);
+  private readonly db = nodeInject(DatabaseService);
 
-  findAll() {
+  public findAll() {
     return this.db.query('SELECT * FROM users');
   }
 }
@@ -82,7 +84,10 @@ class UserRepository {
 describe('UserRepository', () => {
   const createTest = createTestFactory({
     target: UserRepository,
-    providers: createProviderSet(DatabaseService),
+    provide: [{
+      provide: DatabaseService,
+      useClass: MockDatabaseService,
+    }]
   });
 
   it('should find all users', () => {
@@ -93,7 +98,7 @@ describe('UserRepository', () => {
 });
 ```
 
-### Mocking Dependencies
+## Mocking dependencies
 
 Replace real dependencies with mocks or stubs:
 
@@ -103,25 +108,25 @@ import { createTestFactory } from '@zodyac/illuma/testkit';
 
 @NodeInjectable()
 class EmailService {
-  send(to: string, message: string) {
+  public send(to: string, message: string) {
     // Real implementation would send email
     console.log(`Sending to ${to}: ${message}`);
   }
 }
 
 class MockEmailService {
-  sent: Array<{ to: string; message: string }> = [];
+  public readonly sent: Array<{ to: string; message: string }> = [];
   
-  send(to: string, message: string) {
+  public send(to: string, message: string) {
     this.sent.push({ to, message });
   }
 }
 
 @NodeInjectable()
 class NotificationService {
-  private email = nodeInject(EmailService);
+  private readonly email = nodeInject(EmailService);
 
-  notifyUser(userId: string, message: string) {
+  public notifyUser(userId: string, message: string) {
     this.email.send(`user-${userId}@example.com`, message);
   }
 }
@@ -150,7 +155,7 @@ describe('NotificationService', () => {
 });
 ```
 
-### Testing with Tokens
+## Testing with tokens
 
 ```typescript
 import {
@@ -166,10 +171,10 @@ const API_KEY = new NodeToken<string>('API_KEY');
 
 @NodeInjectable()
 class ApiClient {
-  private url = nodeInject(API_URL);
-  private key = nodeInject(API_KEY);
+  private readonly url = nodeInject(API_URL);
+  private readonly key = nodeInject(API_KEY);
 
-  getEndpoint() {
+  public getEndpoint() {
     return `${this.url}?key=${this.key}`;
   }
 }
@@ -191,7 +196,7 @@ describe('ApiClient', () => {
 });
 ```
 
-### Testing Multi-Token Dependencies
+## Testing Multi-Token dependencies
 
 ```typescript
 import {
@@ -211,29 +216,29 @@ const PLUGIN = new MultiNodeToken<Plugin>('PLUGIN');
 
 @NodeInjectable()
 class LoggerPlugin implements Plugin {
-  name = 'logger';
-  execute() {
+  public name = 'logger';
+  public execute() {
     console.log('Logging...');
   }
 }
 
 @NodeInjectable()
 class CachePlugin implements Plugin {
-  name = 'cache';
-  execute() {
+  public readonly name = 'cache';
+  public execute() {
     console.log('Caching...');
   }
 }
 
 @NodeInjectable()
 class PluginManager {
-  private plugins = nodeInject(PLUGIN);
+  private readonly plugins = nodeInject(PLUGIN);
 
-  runAll() {
+  public runAll() {
     this.plugins.forEach(p => p.execute());
   }
 
-  getPluginNames() {
+  public getPluginNames() {
     return this.plugins.map(p => p.name);
   }
 }
@@ -255,7 +260,7 @@ describe('PluginManager', () => {
 });
 ```
 
-### Optional Dependencies
+## Optional dependencies
 
 Test services with optional dependencies:
 
@@ -272,9 +277,9 @@ const LOGGER = new NodeToken<{ log(msg: string): void }>('LOGGER');
 
 @NodeInjectable()
 class Service {
-  private logger = nodeInject(LOGGER, { optional: true });
+  private readonly logger = nodeInject(LOGGER, { optional: true });
 
-  doWork() {
+  public doWork() {
     this.logger?.log('Working...');
     return 'done';
   }
@@ -304,9 +309,9 @@ describe('Service', () => {
 });
 ```
 
-## 🔧 Using with Different Test Frameworks
+## Framework examples
 
-While the examples above use Jest, the testkit works with any JavaScript testing framework:
+While the examples above use Jest, the testkit works with any JavaScript testing framework.
 
 ### Vitest
 
@@ -340,7 +345,7 @@ describe('MyService', () => {
 });
 ```
 
-### Node Test Runner
+### Node test runner
 
 ```typescript
 import { describe, it } from 'node:test';
@@ -357,18 +362,19 @@ describe('MyService', () => {
 });
 ```
 
-## 📚 API Reference
+## API Reference
 
-### `createTestFactory<T>(config: iTestFactoryConfig<T>): TestFactoryFn<T>`
+### `createTestFactory<T>(config)`
 
 Creates a test factory for the specified target.
 
-**Type Parameters:**
-- `T` - The type of the service/class being tested
-
 **Parameters:**
-- `config.target: Token<T>` - The class or token to instantiate
-- `config.providers?: iNodeProviderSet` - Optional providers to include
+
+| Parameter          | Type               | Description                                        |
+| ------------------ | ------------------ | -------------------------------------------------- |
+| `config.target`    | `Token<T>`         | The class or token to instantiate                  |
+| `config.providers` | `iNodeProviderSet` | *(Deprecated)* Providers via `createProviderSet()` |
+| `config.provide`   | `Providable[]`     | Array of providers to include                      |
 
 **Returns:** `TestFactoryFn<T>` - A function that creates test instances
 
@@ -376,20 +382,18 @@ Creates a test factory for the specified target.
 
 A function that creates a new test instance with a clean DI container.
 
-**Returns:** `iSpectator<T>` - The spectator object
+**Returns:** `Spectator<T>`
 
-### `iSpectator<T>`
+### `Spectator<T>`
 
 The object returned by test factory functions.
 
-**Properties:**
-- `instance: T` - The instantiated service being tested
-- `nodeInject: NodeInjectFn` - Function to inject additional dependencies
+| Property/Method               | Type                        | Description                                 |
+| ----------------------------- | --------------------------- | ------------------------------------------- |
+| `instance`                    | `T`                         | The instantiated service being tested       |
+| `nodeInject(token, options?)` | `<U>(token: Token<U>) => U` | Inject a dependency from the test container |
 
-**Methods:**
-- `nodeInject<U>(token: Token<U>, options?: { optional?: boolean }): U` - Inject a dependency from the test container
-
-## 💡 Best Practices
+## Best practices
 
 1. **Create factory once per test suite**: Define `createTest` outside of individual test cases for better performance
 2. **Call factory in each test**: Call the factory function inside each test to ensure isolation
@@ -397,8 +401,10 @@ The object returned by test factory functions.
 4. **Test one thing at a time**: Focus each test on a single behavior
 5. **Leverage TypeScript**: Use types to ensure test correctness at compile time
 
-## 🔗 See Also
+## Related documentation
 
-- [Main Documentation](../README.md)
-- [API Reference](./API.md)
-- [Troubleshooting](./TROUBLESHOOTING.md)
+- [Getting Started](./GETTING_STARTED.md) - Setup and basic concepts
+- [Providers Guide](./PROVIDERS.md) - Provider types
+- [Tokens Guide](./TOKENS.md) - Using tokens
+- [API Reference](./API.md) - Complete API documentation
+- [Error Reference](./TROUBLESHOOTING.md) - Troubleshooting
