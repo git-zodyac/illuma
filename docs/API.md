@@ -49,6 +49,13 @@ container.provide([
   },
 ]);
 
+// Token helper methods work great with arrays
+container.provide([
+  CONFIG.withValue({ apiUrl: 'https://api.example.com' }),
+  UserService,
+  DatabaseService
+]);
+
 // Nested arrays are supported
 container.provide([
   UserService,
@@ -183,6 +190,106 @@ const CONFIG = new NodeToken<Config>('CONFIG', {
 });
 ```
 
+### Provider Helpers
+
+Token instances provide convenient helper methods to create provider configurations. These methods simplify provider registration by reducing boilerplate.
+
+#### `withValue(value: T): iNodeValueProvider<T>`
+
+Create a value provider for this token.
+Equivalent to providing the value directly: `{ provide: TOKEN, value: VALUE }`, but type-safe in arrays of providers.
+
+**Parameters:**
+- `value` - The value to provide
+
+**Returns:** A value provider configuration object
+
+**Example:**
+```typescript
+const API_URL = new NodeToken<string>('API_URL');
+
+// Instead of:
+container.provide({ provide: API_URL, value: 'https://api.example.com' });
+
+// You can write:
+container.provide(API_URL.withValue('https://api.example.com'));
+```
+
+#### `withFactory(factory: () => T): iNodeFactoryProvider<T>`
+
+Create a factory provider for this token.
+Equivalent to providing the factory directly: `{ provide: TOKEN, factory: FACTORY_FUNCTION }`, but type-safe in arrays of providers.
+
+**Parameters:**
+- `factory` - A function that returns the value
+
+**Returns:** A factory provider configuration object
+
+**Example:**
+```typescript
+const CONFIG = new NodeToken<Config>('CONFIG');
+
+container.provide(
+  CONFIG.withFactory(() => {
+    const env = nodeInject(Environment);
+    return {
+      apiUrl: env.API_URL || 'https://api.example.com',
+      debug: env.NODE_ENV === 'development',
+    };
+  }),
+);
+```
+
+#### `withClass(ctor: Ctor<T>): iNodeClassProvider<T>`
+
+Create a class provider for this token.
+Equivalent to providing the class directly: `{ provide: TOKEN, useClass: CLASS_CONSTRUCTOR }`, but type-safe in arrays of providers.
+
+**Parameters:**
+- `ctor` - The class constructor to instantiate
+
+**Returns:** A class provider configuration object
+
+**Example:**
+```typescript
+interface Logger {
+  log(message: string): void;
+}
+
+class ConsoleLogger implements Logger {
+  public log(message: string) {
+    console.log(message);
+  }
+}
+
+const LOGGER = new NodeToken<Logger>('LOGGER');
+container.provide(LOGGER.withClass(ConsoleLogger));
+```
+
+#### `withAlias<K extends T>(alias: Token<K>): iNodeAliasProvider<T>`
+
+Create an alias provider that forwards to another token.
+Equivalent to providing the alias token directly: `{ provide: TOKEN, alias: ALIAS_TOKEN }`, but type-safe in arrays of providers.
+
+**Parameters:**
+- `alias` - The token to forward requests to
+
+**Returns:** An alias provider configuration object
+
+**Example:**
+```typescript
+const PRIMARY_DB = new NodeToken<Database>('PRIMARY_DB');
+const DB = new NodeToken<Database>('DB');
+
+container.provide(PRIMARY_DB.withClass(PostgresDatabase));
+container.provide(DB.withAlias(PRIMARY_DB));
+
+// Both tokens resolve to the same instance
+const db1 = container.get(DB);
+const db2 = container.get(PRIMARY_DB);
+// db1 === db2
+```
+
 ---
 
 ## MultiNodeToken
@@ -207,18 +314,112 @@ const PLUGINS = new MultiNodeToken<Plugin>('PLUGINS');
 
 container.provide({
   provide: PLUGINS,
-  value: new LoggingPlugin()
+  useClass: LoggingPlugin,
 });
 
 container.provide({
   provide: PLUGINS,
-  value: new MetricsPlugin()
+  useClass: MetricsPlugin,
 });
 
 container.bootstrap();
 
 // Injecting returns an array
 const plugins = container.get(PLUGINS); // Plugin[]
+```
+
+### Provider Helpers
+
+Multi-token instances provide the same convenient helper methods as `NodeToken` to create provider configurations.
+
+#### `withValue(value: T): iNodeValueProvider<T>`
+
+Create a value provider for this multi-token.
+Equivalent to providing the value directly: `{ provide: MULTI_TOKEN, value: VALUE }`, but type-safe in arrays of providers.
+
+**Parameters:**
+- `value` - The value to provide
+
+**Returns:** A value provider configuration object
+
+**Example:**
+```typescript
+const VALUES = new MultiNodeToken<string>('VALUES');
+
+container.provide([
+  VALUES.withValue('Value A'),
+  VALUES.withValue('Value B'),
+  VALUES.withValue('Value C')
+]);
+
+const plugins = container.get(VALUES); // string[]
+```
+
+#### `withFactory(factory: () => T): iNodeFactoryProvider<T>`
+
+Create a factory provider for this multi-token.
+Equivalent to providing the factory directly: `{ provide: MULTI_TOKEN, factory: FACTORY_FUNCTION }`, but type-safe in arrays of providers.
+
+**Parameters:**
+- `factory` - A function that returns the value
+
+**Returns:** A factory provider configuration object
+
+**Example:**
+```typescript
+const MIDDLEWARE = new MultiNodeToken<Middleware>('MIDDLEWARE');
+
+container.provide([
+  MIDDLEWARE.withFactory(() => {
+    const env = nodeInject(Environment);
+    return new AuthMiddleware(env.SECRET);
+  }),
+  MIDDLEWARE.withFactory(createMiddleware),
+  MIDDLEWARE.withClass(CorsMiddleware)
+]);
+```
+
+#### `withClass(ctor: Ctor<T>): iNodeClassProvider<T>`
+
+Create a class provider for this multi-token.
+Equivalent to providing the class directly: `{ provide: MULTI_TOKEN, useClass: CLASS_CONSTRUCTOR }`, but type-safe in arrays of providers.
+
+**Parameters:**
+- `ctor` - The class constructor to instantiate
+
+**Returns:** A class provider configuration object
+
+**Example:**
+```typescript
+const VALIDATORS = new MultiNodeToken<Validator>('VALIDATORS');
+
+container.provide([
+  VALIDATORS.withClass(EmailValidator),
+  VALIDATORS.withClass(PhoneValidator),
+  VALIDATORS.withClass(UrlValidator)
+]);
+```
+
+#### `withAlias<K extends T>(alias: Token<K>): iNodeAliasProvider<T>`
+
+Create an alias provider that forwards to another token.
+Equivalent to providing the alias token directly: `{ provide: MULTI_TOKEN, alias: ALIAS_TOKEN }`, but type-safe in arrays of providers.
+
+**Parameters:**
+- `alias` - The token to forward requests to
+
+**Returns:** An alias provider configuration object
+
+**Example:**
+```typescript
+const HANDLERS = new MultiNodeToken<Handler>('HANDLERS');
+const PRIMARY_HANDLER = new NodeToken<Handler>('PRIMARY_HANDLER');
+
+container.provide(PRIMARY_HANDLER.withClass(MainHandler));
+container.provide(HANDLERS.withAlias(PRIMARY_HANDLER));
+
+// HANDLERS will include the PRIMARY_HANDLER instance in its array
+const handlers = container.get(HANDLERS); // [MainHandler instance]
 ```
 
 ---

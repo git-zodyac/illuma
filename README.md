@@ -15,7 +15,7 @@ A lightweight, type-safe dependency injection container for TypeScript and JavaS
 - **🎯 Type-Safe**: Full TypeScript support with excellent type inference
 - **🪶 Lightweight**: Zero dependencies, minimal bundle size
 - **🔄 Flexible Providers**: Support for classes, factories, values, and aliases
-- **🎨 Decorator Support**: Clean, Angular-style `@NodeInjectable()` decorators
+- **🎨 Decorator Support**: Angular-style `@NodeInjectable()` decorator (optional)
 - **🔗 Multi-Tokens**: Built-in support for multi-provider tokens
 - **🌲 Dependency Tree**: Automatic resolution of complex dependency graphs
 - **⚡ Performance**: Optional performance monitoring built-in
@@ -134,6 +134,14 @@ container.provide({
   }
 });
 
+// Or use the convenient helper method
+container.provide(
+  CONFIG_TOKEN.withValue({
+    apiUrl: 'https://api.example.com',
+    timeout: 5000
+  })
+);
+
 container.bootstrap();
 const config = container.get(CONFIG_TOKEN);
 ```
@@ -195,6 +203,12 @@ container.provide({
   provide: PLUGINS,
   factory: () => new LoggingPlugin()
 });
+
+// Or use helper methods for cleaner syntax
+container.provide([
+  PLUGINS.withFactory(() => new AnalyticsPlugin()),
+  PLUGINS.withFactory(() => new LoggingPlugin())
+]);
 
 container.bootstrap();
 

@@ -1,5 +1,13 @@
 import { InjectionError } from "../errors";
-import type { iNodeTokenBaseOptions, Token } from "../types";
+import type {
+  Ctor,
+  iNodeAliasProvider,
+  iNodeClassProvider,
+  iNodeFactoryProvider,
+  iNodeTokenBaseOptions,
+  iNodeValueProvider,
+  Token,
+} from "../types";
 import { INJECTION_SYMBOL } from "./decorator";
 
 /**
@@ -13,6 +21,38 @@ export class NodeBase<T> {
     public readonly name: string,
     public readonly opts?: iNodeTokenBaseOptions<T>,
   ) {}
+
+  /** Provides this token with a value */
+  public withValue(value: T): iNodeValueProvider<T> {
+    return {
+      provide: this,
+      value,
+    };
+  }
+
+  /** Provides this token using a factory function */
+  public withFactory(factory: () => T): iNodeFactoryProvider<T> {
+    return {
+      provide: this,
+      factory,
+    };
+  }
+
+  /** Provides this token using a class constructor */
+  public withClass(ctor: Ctor<T>): iNodeClassProvider<T> {
+    return {
+      provide: this,
+      useClass: ctor,
+    };
+  }
+
+  /** Creates an alias to another token */
+  public withAlias<K extends T>(alias: Token<K>): iNodeAliasProvider<T> {
+    return {
+      provide: this,
+      alias,
+    };
+  }
 
   public toString(): string {
     return `Token[${this.name}]`;

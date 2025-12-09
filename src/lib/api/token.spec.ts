@@ -16,6 +16,50 @@ describe("Token", () => {
       const token = new NodeBase("test");
       expect(token.toString()).toBe("Token[test]");
     });
+
+    describe("provider helpers", () => {
+      it("should create value provider with withValue", () => {
+        const token = new NodeToken("test");
+        const value = "test value";
+        const provider = token.withValue(value);
+        expect(provider).toEqual({
+          provide: token,
+          value,
+        });
+      });
+
+      it("should create factory provider with withFactory", () => {
+        const token = new NodeToken<string>("test");
+        const factory = () => "test value";
+        const provider = token.withFactory(factory);
+        expect(provider).toEqual({
+          provide: token,
+          factory,
+        });
+      });
+
+      it("should create class provider with withClass", () => {
+        const token = new NodeToken<TestClass>("test");
+        class TestClass {
+          value = "test";
+        }
+        const provider = token.withClass(TestClass);
+        expect(provider).toEqual({
+          provide: token,
+          useClass: TestClass,
+        });
+      });
+
+      it("should create alias provider with withAlias", () => {
+        const token = new NodeToken<string>("test");
+        const aliasToken = new NodeToken<string>("alias");
+        const provider = token.withAlias(aliasToken);
+        expect(provider).toEqual({
+          provide: token,
+          alias: aliasToken,
+        });
+      });
+    });
   });
 
   describe("NodeToken", () => {
@@ -29,6 +73,50 @@ describe("Token", () => {
     it("should return correct toString", () => {
       const token = new MultiNodeToken("test");
       expect(token.toString()).toBe("MultiNodeToken[test]");
+    });
+
+    describe("provider helpers", () => {
+      it("should create value provider with withValue", () => {
+        const token = new MultiNodeToken<string>("test");
+        const value = "test value";
+        const provider = token.withValue(value);
+        expect(provider).toEqual({
+          provide: token,
+          value,
+        });
+      });
+
+      it("should create factory provider with withFactory", () => {
+        const token = new MultiNodeToken<string>("test");
+        const factory = () => "test value";
+        const provider = token.withFactory(factory);
+        expect(provider).toEqual({
+          provide: token,
+          factory,
+        });
+      });
+
+      it("should create class provider with withClass", () => {
+        const token = new MultiNodeToken<TestClass>("test");
+        class TestClass {
+          value = "test";
+        }
+        const provider = token.withClass(TestClass);
+        expect(provider).toEqual({
+          provide: token,
+          useClass: TestClass,
+        });
+      });
+
+      it("should create alias provider with withAlias", () => {
+        const token = new MultiNodeToken<string>("test");
+        const aliasToken = new NodeToken<string>("alias");
+        const provider = token.withAlias(aliasToken);
+        expect(provider).toEqual({
+          provide: token,
+          alias: aliasToken,
+        });
+      });
     });
   });
 

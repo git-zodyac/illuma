@@ -54,9 +54,7 @@ export interface iNodeClassProvider<T> {
   /** The token this provider is for */
   provide: Token<T>;
   /** The class to instantiate */
-  useClass: new (
-    ...args: any[]
-  ) => NoInfer<T>;
+  useClass: Ctor<T>;
 }
 /**
  * Provider that creates an alias to another token.
