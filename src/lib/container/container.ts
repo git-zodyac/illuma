@@ -8,6 +8,7 @@ import {
   NodeToken,
   nodeInject,
 } from "../api";
+import { isConstructor } from "../api/decorator";
 import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
 import type { ProtoNode, TreeNode, UpstreamGetter } from "../provider";
@@ -27,7 +28,6 @@ import type {
   Token,
 } from "../types";
 import { Injector, InjectorImpl } from "../utils";
-import { isConstructor } from "../api/decorator";
 
 /**
  * Configuration options for the NodeContainer.
