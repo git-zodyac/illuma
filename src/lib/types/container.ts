@@ -1,6 +1,6 @@
 import type { MultiNodeToken, NodeToken } from "../api";
 import type { TreeNode } from "../provider";
-import type { Ctor, Providable, Token } from "./providers";
+import type { Ctor, Provider, Token } from "./providers";
 import type { iNodeProviderSet } from "./set";
 
 /**
@@ -13,7 +13,7 @@ export interface iDIContainer {
    * @template T - The type of value being provided
    * @param provider - The provider configuration
    */
-  provide<T>(provider: Providable<T>): void;
+  provide<T>(provider: Provider<T>): void;
 
   /**
    * Includes a provider set into the container.

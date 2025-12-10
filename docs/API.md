@@ -31,7 +31,7 @@ new NodeContainer(options?: { measurePerformance?: boolean })
 
 ### Methods
 
-#### `provide<T>(provider: Providable<T>): void`
+#### `provide<T>(provider: Provider<T>): void`
 
 Register a provider or array of providers in the container.
 
@@ -287,15 +287,15 @@ function injectAsync<T>(
   fn: () => Token<T> | Promise<Token<T>>,
   options?: {
     withCache?: boolean;
-    overrides?: Providable<unknown>[];
+    overrides?: Provider[];
   }
 ): () => Promise<T | T[]>
 ```
 
-| Option      | Type           | Default | Description                                |
-| ----------- | -------------- | ------- | ------------------------------------------ |
-| `withCache` | `boolean`      | `true`  | Cache the resolved instance                |
-| `overrides` | `Providable[]` | `[]`    | Additional providers for the sub-container |
+| Option      | Type         | Default | Description                                |
+| ----------- | ------------ | ------- | ------------------------------------------ |
+| `withCache` | `boolean`    | `true`  | Cache the resolved instance                |
+| `overrides` | `Provider[]` | `[]`    | Additional providers for the sub-container |
 
 ```typescript
 private readonly getAnalytics = injectAsync(
@@ -314,10 +314,10 @@ Create an isolated sub-container with an array of providers.
 
 ```typescript
 function injectGroupAsync(
-  fn: () => Providable<unknown>[] | Promise<Providable<unknown>[]>,
+  fn: () => Provider<unknown>[] | Promise<Provider<unknown>[]>,
   options?: {
     withCache?: boolean;
-    overrides?: Providable<unknown>[];
+    overrides?: Provider[];
   }
 ): () => Promise<iInjector>
 ```
@@ -342,7 +342,7 @@ function injectChildrenAsync(
   fn: () => iNodeProviderSet | Promise<iNodeProviderSet>,
   options?: {
     withCache?: boolean;
-    overrides?: Providable<unknown>[];
+    overrides?: Provider[];
   }
 ): () => Promise<iInjector>
 ```
@@ -369,6 +369,8 @@ type Ctor<T> = new (...args: any[]) => T;
 
 ### Providable<T>
 
+** Deprecated** – will be removed after version 2.0.
+
 Valid provider configuration.
 
 ```typescript
@@ -386,7 +388,11 @@ type Providable<T> =
 Any provider type.
 
 ```typescript
-type Provider = NodeBase<unknown> | iNodeProvider<unknown> | Ctor<unknown>;
+type Provider<T = unknown> =
+  | NodeBase<T>
+  | iNodeProvider<T>
+  | Ctor<T>
+  | Provider[];
 ```
 
 ### Provider interfaces

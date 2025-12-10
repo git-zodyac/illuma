@@ -23,7 +23,7 @@ import type {
   iDIContainer,
   iNodeProvider,
   iNodeProviderSet,
-  Providable,
+  Provider,
   Token,
 } from "../types";
 import { Injector, InjectorImpl } from "../utils";
@@ -77,7 +77,7 @@ export class NodeContainer implements iDIContainer {
    * container.provide({ provide: ServiceClass, useClass: ServiceOverride });
    * ```
    */
-  public provide<T>(provider: Providable<T>): void {
+  public provide<T>(provider: Provider<T>): void {
     if (this._bootstrapped) {
       throw InjectionError.bootstrapped();
     }
@@ -173,7 +173,9 @@ export class NodeContainer implements iDIContainer {
   }
 
   /**
-   * @deprecated Use {@link provide} instead.
+   * @deprecated Will be removed after version 2.0. Use {@link provide} instead.
+   *
+   *
    * Includes a provider set (group of providers) into the container.
    * This is useful for organizing related providers together.
    *

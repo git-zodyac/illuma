@@ -8,7 +8,9 @@ import { isInjectable } from "./decorator";
 export const INJECTION_GROUP_SYMBOL = Symbol("__INJECTION_GROUP__");
 
 /**
- * @deprecated Use array of providers with {@link provide} instead.
+ * @deprecated – will be removed after version 2.0.
+ * Use array of providers with {@link provide} instead.
+ *
  * Creates a reusable set of providers that can be included in a container.
  * This is useful for organizing related providers into modules.
  *

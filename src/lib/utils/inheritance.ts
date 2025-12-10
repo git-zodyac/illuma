@@ -1,7 +1,7 @@
 import type { MultiNodeToken, NodeToken } from "../api";
 import { extractToken, nodeInject } from "../api";
 import { NodeContainer } from "../container";
-import type { Ctor, iNodeProviderSet, Providable, Token } from "../types";
+import type { Ctor, iNodeProviderSet, Provider, Token } from "../types";
 import type { iInjector } from "./injector";
 import { Injector } from "./injector";
 
@@ -18,7 +18,7 @@ interface iInjectionOptions {
    * These will be provided in addition to the main injection
    * @default []
    */
-  overrides?: Providable<unknown>[];
+  overrides?: Provider[];
 }
 
 /**
@@ -73,7 +73,7 @@ export function injectChildrenAsync(
  * @returns A function that returns a promise resolving to the injector of the sub-container
  */
 export function injectGroupAsync(
-  fn: MaybeAsyncFactory<Providable<unknown>[]>,
+  fn: MaybeAsyncFactory<Provider[]>,
   opts?: iInjectionOptions,
 ): () => Promise<iInjector> {
   const { container: parent } = nodeInject(Injector);

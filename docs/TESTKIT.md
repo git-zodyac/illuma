@@ -374,7 +374,7 @@ Creates a test factory for the specified target.
 | ------------------ | ------------------ | -------------------------------------------------- |
 | `config.target`    | `Token<T>`         | The class or token to instantiate                  |
 | `config.providers` | `iNodeProviderSet` | *(Deprecated)* Providers via `createProviderSet()` |
-| `config.provide`   | `Providable[]`     | Array of providers to include                      |
+| `config.provide`   | `Provider[]`     | Array of providers to include                      |
 
 **Returns:** `TestFactoryFn<T>` - A function that creates test instances
 

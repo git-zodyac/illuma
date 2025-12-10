@@ -1,7 +1,7 @@
 import type { NodeInjectFn } from "../api";
 import { NodeContainer } from "../container";
 import { InjectionError } from "../errors";
-import type { iNodeInjectorOptions, iNodeProviderSet, Providable, Token } from "../types";
+import type { iNodeInjectorOptions, iNodeProviderSet, Provider, Token } from "../types";
 
 /**
  * Spectator object returned by test factory functions.
@@ -34,9 +34,12 @@ export type TestFactoryFn<T> = (() => iSpectator<T>) & iTestFactory;
  */
 export interface iTestFactoryConfig<T> {
   readonly target: Token<T>;
-  /** @deprecated */
+  /**
+   * @deprecated Will be removed after version 2.0.
+   * Use {@link provide} instead.
+   */
   readonly providers?: iNodeProviderSet;
-  readonly provide?: Providable<unknown>[];
+  readonly provide?: Provider[];
 }
 
 /**

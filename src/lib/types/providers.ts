@@ -82,10 +82,18 @@ export type iNodeProvider<T> =
  * @template T - The type of value being provided
  */
 
+/**
+ * @deprecated Will be removed after version 2.0.
+ * Use {@link Provider} instead.
+ */
 export type Providable<T> =
   | NodeBase<T>
   | iNodeProvider<T>
   | Ctor<T>
   | Providable<unknown>[];
 
-export type Provider = NodeBase<unknown> | iNodeProvider<unknown> | Ctor<unknown>;
+export type Provider<T = unknown> =
+  | NodeBase<T>
+  | iNodeProvider<T>
+  | Ctor<T>
+  | Provider<unknown>[];
