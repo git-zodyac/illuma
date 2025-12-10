@@ -1,5 +1,6 @@
 {
   "name": "@zodyac/illuma",
+  "description": "A lightweight, type-safe dependency injection container for anything, inspired by Angular's DI system",
   "author": "bebrasmell",
   "repository": {
     "type": "git",
