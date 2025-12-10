@@ -74,6 +74,7 @@ export function isInjectable<T>(ctor: unknown): ctor is Ctor<T> & {
 } {
   return (
     typeof ctor === "function" &&
+    isConstructor(ctor) &&
     INJECTION_SYMBOL in ctor &&
     ctor[INJECTION_SYMBOL] instanceof NodeToken
   );
@@ -84,4 +85,8 @@ export function getInjectableToken<T>(
   ctor: Ctor<T> & { [INJECTION_SYMBOL]: NodeToken<T> },
 ): NodeToken<T> {
   return ctor[INJECTION_SYMBOL];
+}
+
+export function isConstructor(fn: unknown): fn is Ctor<any> {
+  return typeof fn === "function" && fn.prototype && fn.prototype.constructor === fn;
 }

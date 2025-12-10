@@ -1,7 +1,8 @@
 import type { MultiNodeToken, NodeBase, NodeToken } from "../api/token";
 import { InjectionError } from "../errors";
 
-type InjectorFn = (token: NodeBase<any>, optional?: boolean) => any;
+/** @internal */
+export type InjectorFn = (token: NodeBase<any>, optional?: boolean) => any;
 
 /**
  * Internal context manager for tracking dependency injections during factory execution.

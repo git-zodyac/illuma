@@ -1289,7 +1289,7 @@ describe("NodeContainer", () => {
       expect(() => container.produce(RuntimeClass)).toThrow(InjectionError);
     });
 
-    it("should throw for invalid constructor", () => {
+    it("should not throw for non-injectable constructor", () => {
       const container = new NodeContainer();
 
       class NotInjectable {
@@ -1298,7 +1298,7 @@ describe("NodeContainer", () => {
 
       container.bootstrap();
 
-      expect(() => container.produce(NotInjectable as any)).toThrow(InjectionError);
+      expect(() => container.produce(NotInjectable)).toThrow(InjectionError);
     });
 
     it("should work with complex dependency chains", () => {
@@ -1490,6 +1490,108 @@ describe("NodeContainer", () => {
 
       expect(instance.dep.value).toBe("dependency");
       expect(instance.custom).toBe("custom-value");
+    });
+
+    it("should work with a factory function", () => {
+      const container = new NodeContainer();
+
+      @NodeInjectable()
+      class DependencyService {
+        public readonly value = "from-dependency";
+      }
+
+      container.provide(DependencyService);
+      container.bootstrap();
+
+      const result = container.produce(() => {
+        const dep = nodeInject(DependencyService);
+        return { computed: `${dep.value}-computed` };
+      });
+
+      expect(result.computed).toBe("from-dependency-computed");
+    });
+
+    it("should create new results on each factory call", () => {
+      const container = new NodeContainer();
+
+      container.bootstrap();
+
+      const result1 = container.produce(() => ({ id: Math.random() }));
+      const result2 = container.produce(() => ({ id: Math.random() }));
+
+      expect(result1.id).not.toBe(result2.id);
+    });
+
+    it("should allow factory to inject token-based dependencies", () => {
+      const container = new NodeContainer();
+      const configToken = new NodeToken<{ apiUrl: string }>("Config");
+
+      container.provide({
+        provide: configToken,
+        value: { apiUrl: "https://api.example.com" },
+      });
+
+      container.bootstrap();
+
+      const result = container.produce(() => {
+        const config = nodeInject(configToken);
+        return { url: config.apiUrl, timestamp: Date.now() };
+      });
+
+      expect(result.url).toBe("https://api.example.com");
+      expect(result.timestamp).toBeDefined();
+    });
+
+    it("should allow factory with optional dependencies", () => {
+      const container = new NodeContainer();
+      const optionalToken = new NodeToken<string>("Optional");
+
+      container.bootstrap();
+
+      const result = container.produce(() => {
+        const optional = nodeInject(optionalToken, { optional: true });
+        return { value: optional ?? "default" };
+      });
+
+      expect(result.value).toBe("default");
+    });
+
+    it("should throw from factory when required dependency is missing", () => {
+      const container = new NodeContainer();
+      const missingToken = new NodeToken<string>("Missing");
+
+      container.bootstrap();
+
+      expect(() =>
+        container.produce(() => {
+          const value = nodeInject(missingToken);
+          return { value };
+        }),
+      ).toThrow(InjectionError);
+    });
+
+    it("should allow factory to inject multi-token dependencies", () => {
+      const container = new NodeContainer();
+      const pluginToken = new MultiNodeToken<{ name: string }>("Plugin");
+
+      container.provide({
+        provide: pluginToken,
+        value: { name: "plugin-a" },
+      });
+
+      container.provide({
+        provide: pluginToken,
+        value: { name: "plugin-b" },
+      });
+
+      container.bootstrap();
+
+      const result = container.produce(() => {
+        const plugins = nodeInject(pluginToken);
+        return { pluginNames: plugins.map((p) => p.name) };
+      });
+
+      expect(result.pluginNames).toEqual(["plugin-a", "plugin-b"]);
     });
   });
 

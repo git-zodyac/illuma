@@ -27,6 +27,7 @@ import type {
   Token,
 } from "../types";
 import { Injector, InjectorImpl } from "../utils";
+import { isConstructor } from "../api/decorator";
 
 /**
  * Configuration options for the NodeContainer.
@@ -357,27 +358,28 @@ export class NodeContainer implements iDIContainer {
    * Must be called after {@link bootstrap}.
    *
    * @template T - The type of the class being instantiated
-   * @param ctor - The constructor of the class to instantiate
+   * @param factory - Factory or class constructor to instantiate
    * @returns A new instance of the class with dependencies injected
    * @throws {InjectionError} If called before bootstrap or if the constructor is invalid
    */
-  public produce<T>(ctor: Ctor<T>): T {
+  public produce<T>(fn: Ctor<T> | (() => T)): T {
     if (!this._bootstrapped || !this._rootNode) {
       throw InjectionError.notBootstrapped();
     }
 
-    const token = extractToken<T>(ctor);
-    if (!(token instanceof NodeToken)) throw InjectionError.invalidCtor(ctor);
+    if (typeof fn !== "function") throw InjectionError.invalidCtor(fn);
+    if (isConstructor(fn) && !isInjectable<T>(fn)) {
+      throw InjectionError.invalidCtor(fn);
+    }
 
-    return InjectionContext.instantiate(
-      () => new ctor(),
-      (t, optional) => {
-        if (!this._rootNode) throw InjectionError.notBootstrapped();
-        const node = this._rootNode.find<T>(t);
-        if (!node && !optional) throw InjectionError.notFound(t);
+    const factory = isInjectable<T>(fn) ? () => new fn() : (fn as () => T);
 
-        return node ? node.instance : null;
-      },
-    );
+    return InjectionContext.instantiate(factory, (t, optional) => {
+      if (!this._rootNode) throw InjectionError.notBootstrapped();
+      const node = this._rootNode.find<T>(t);
+      if (!node && !optional) throw InjectionError.notFound(t);
+
+      return node ? node.instance : null;
+    });
   }
 }

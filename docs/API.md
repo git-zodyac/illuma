@@ -77,11 +77,12 @@ const userService = container.get(UserService);
 const config = container.get(CONFIG);
 ```
 
-#### `produce<T>(ctor: Ctor<T>): T`
+#### `produce<T>(fn: Ctor<T> | (() => T)): T`
 
-Create a new instance with dependencies injected, without registering it in the container.
+Create a new instance with dependencies injected, without registering it in the container. Accepts either an injectable class or a factory function.
 
 ```typescript
+// With an injectable class
 @NodeInjectable()
 class RequestHandler {
   private readonly logger = nodeInject(Logger);
@@ -90,6 +91,12 @@ class RequestHandler {
 const handler = container.produce(RequestHandler);
 // handler is not registered in container
 // Each call creates a new instance
+
+// With a factory function
+const config = container.produce(() => {
+  const env = nodeInject(Environment);
+  return { apiUrl: env.apiUrl, timeout: 5000 };
+});
 ```
 
 ---
@@ -227,17 +234,26 @@ class PluginManager {
 }
 ```
 
-#### `produce<T>(ctor: Ctor<T>): T`
+#### `produce<T>(fn: Ctor<T> | (() => T)): T`
 
-Create a new instance with dependencies injected.
+Create a new instance with dependencies injected. Accepts either an injectable class or a factory function.
 
 ```typescript
 @NodeInjectable()
 class FactoryService {
   private readonly injector = nodeInject(Injector);
 
+  // With an injectable class
   public createHandler() {
     return this.injector.produce(RequestHandler);
+  }
+
+  // With a factory function
+  public createCustomConfig(data) {
+    return this.injector.produce(() => {
+      const env = nodeInject(Environment);
+      return { apiUrl: env.apiUrl, ...data };
+    });
   }
 }
 ```
@@ -426,7 +442,7 @@ Interface for container/injector access.
 ```typescript
 interface iInjector {
   get<T>(token: Token<T>): T;
-  produce<T>(ctor: Ctor<T>): T;
+  produce<T>(fn: Ctor<T> | (() => T)): T;
 }
 ```
 

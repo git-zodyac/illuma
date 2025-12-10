@@ -27,7 +27,7 @@ export interface iInjector {
    * @throws {InjectionError} If called before bootstrap or if the constructor is invalid
    * Must be called after {@link bootstrap}.
    */
-  produce<T>(token: Ctor<T>): T;
+  produce<T>(fn: Ctor<T> | (() => T)): T;
 }
 
 /**
@@ -43,8 +43,8 @@ export class InjectorImpl implements iInjector {
     return this.container.get<T>(token as any);
   }
 
-  public produce<T>(token: Ctor<T>): T {
-    return this.container.produce<T>(token);
+  public produce<T>(fn: Ctor<T> | (() => T)): T {
+    return this.container.produce<T>(fn);
   }
 }
 
