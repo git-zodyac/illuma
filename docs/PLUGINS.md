@@ -13,10 +13,6 @@ Illuma provides a plugin system that allows you to extend its core functionality
   - [Context Scanners](#context-scanners)
     - [What are Context Scanners?](#what-are-context-scanners)
     - [Context Scanner Interface](#context-scanner-interface)
-    - [Developing a Context Scanner](#developing-a-context-scanner)
-      - [Example: Custom Decorator Scanner](#example-custom-decorator-scanner)
-      - [Example: Metadata-based Scanner](#example-metadata-based-scanner)
-    - [Registering a Context Scanner](#registering-a-context-scanner)
   - [Diagnostics Modules](#diagnostics-modules)
     - [What are Diagnostics Modules?](#what-are-diagnostics-modules)
     - [Diagnostics Module Interface](#diagnostics-module-interface)
@@ -30,6 +26,8 @@ Illuma provides a plugin system that allows you to extend its core functionality
     - [Property Injection Scanner](#property-injection-scanner)
     - [Conditional Diagnostics Reporter](#conditional-diagnostics-reporter)
   - [Plugin Lifecycle](#plugin-lifecycle)
+  - [Existing Plugins](#existing-plugins)
+    - [Illuma-reflect - Injections via constructor metadata and property decorators](#illuma-reflect---injections-via-constructor-metadata-and-property-decorators)
   - [Next Steps](#next-steps)
 
 ---
@@ -93,135 +91,6 @@ interface iContextScanner {
 
 **Returns:**
 - A `Set<InjectionNode<any>>` containing all detected injection points
-
-### Developing a Context Scanner
-
-#### Example: Custom Decorator Scanner
-
-Let's create a scanner that detects a custom `@Inject()` decorator:
-
-```typescript
-import { InjectionNode, NodeToken } from '@zodyac/illuma';
-import type { iContextScanner } from '@zodyac/illuma';
-
-// First, define the custom decorator
-const INJECT_METADATA_KEY = Symbol('custom:inject');
-
-export function Inject(token: NodeToken<any>) {
-  return function (target: any, propertyKey: string | symbol, parameterIndex: number) {
-    const existingInjections = Reflect.getMetadata(INJECT_METADATA_KEY, target) || [];
-    existingInjections.push({ parameterIndex, token });
-    Reflect.defineMetadata(INJECT_METADATA_KEY, existingInjections, target);
-  };
-}
-
-// Now, create the scanner
-export class CustomDecoratorScanner implements iContextScanner {
-  public scan(factory: any): Set<InjectionNode<any>> {
-    const injections = new Set<InjectionNode<any>>();
-
-    // Check if factory is a class constructor
-    if (typeof factory !== 'function') {
-      return injections;
-    }
-
-    // Check for metadata
-    const metadata = Reflect.getMetadata(INJECT_METADATA_KEY, factory);
-    if (!metadata || !Array.isArray(metadata)) {
-      return injections;
-    }
-
-    // Create injection nodes from metadata
-    for (const { token } of metadata) {
-      const node = new InjectionNode(token, false);
-      injections.add(node);
-    }
-
-    return injections;
-  }
-}
-```
-
-**Usage:**
-
-```typescript
-import { PluginContainer } from '@zodyac/illuma';
-
-// Register the scanner globally
-PluginContainer.extendContextScanner(new CustomDecoratorScanner());
-
-// Now you can use the custom decorator
-class MyService {
-  constructor(@Inject(DATABASE_TOKEN) db: Database) {
-    // db will be injected
-  }
-}
-```
-
-#### Example: Metadata-based Scanner
-
-Create a scanner that reads injection metadata stored by a build tool or preprocessor:
-
-```typescript
-import { InjectionNode } from '@zodyac/illuma';
-import type { iContextScanner } from '@zodyac/illuma';
-
-const INJECTIONS_KEY = Symbol.for('di:injections');
-
-interface InjectionMetadata {
-  tokens: any[];
-  optional: boolean[];
-}
-
-export class MetadataScanner implements iContextScanner {
-  public scan(factory: any): Set<InjectionNode<any>> {
-    const injections = new Set<InjectionNode<any>>();
-
-    if (typeof factory !== 'function') {
-      return injections;
-    }
-
-    // Read metadata attached by build tool
-    const metadata: InjectionMetadata = (factory as any)[INJECTIONS_KEY];
-    
-    if (!metadata || !metadata.tokens) {
-      return injections;
-    }
-
-    // Create injection nodes
-    for (let i = 0; i < metadata.tokens.length; i++) {
-      const token = metadata.tokens[i];
-      const optional = metadata.optional[i] || false;
-      const node = new InjectionNode(token, optional);
-      injections.add(node);
-    }
-
-    return injections;
-  }
-}
-```
-
-### Registering a Context Scanner
-
-Context scanners must be registered **before** creating your container or providing any services:
-
-```typescript
-import { PluginContainer, NodeContainer } from '@zodyac/illuma';
-import { CustomDecoratorScanner } from './scanners';
-
-// 1. Register scanner first
-PluginContainer.extendContextScanner(new CustomDecoratorScanner());
-
-// 2. Then create container and provide services
-const container = new NodeContainer();
-container.provide([
-  MyService,
-  AnotherService
-]);
-
-// 3. Bootstrap
-container.bootstrap();
-```
 
 **Important notes:**
 - Register scanners **before** providing services
@@ -424,12 +293,12 @@ Support property-based injection using decorators:
 
 ```typescript
 import { InjectionNode } from '@zodyac/illuma';
-import type { iContextScanner } from '@zodyac/illuma';
+import type { iContextScanner, NodeToken } from '@zodyac/illuma';
 
 const PROPERTY_INJECT_KEY = Symbol('di:properties');
 
 // Property decorator
-export function InjectProperty(token: any) {
+export function InjectProperty<T>(token: NodeToken<T>) {
   return function (target: any, propertyKey: string) {
     const properties = Reflect.getMetadata(PROPERTY_INJECT_KEY, target.constructor) || [];
     properties.push({ propertyKey, token });
@@ -460,25 +329,13 @@ export class PropertyInjectionScanner implements iContextScanner {
 }
 ```
 
-**Usage:**
+Register the scanner:
 
 ```typescript
-class UserService {
-  @InjectProperty(DATABASE_TOKEN)
-  private database!: Database;
-
-  @InjectProperty(LOGGER_TOKEN)
-  private logger!: Logger;
-
-  getUsers() {
-    this.logger.info('Fetching users');
-    return this.database.query('SELECT * FROM users');
-  }
-}
-
-// Register the scanner
 PluginContainer.extendContextScanner(new PropertyInjectionScanner());
 ```
+
+Now properties decorated with `@InjectProperty()` will be detected, but not injected automatically. You will need to implement property injection logic yourself.
 
 ### Conditional Diagnostics Reporter
 
@@ -555,6 +412,12 @@ container.bootstrap();
 4. **Post-Bootstrap**: Diagnostics modules receive report
 
 ---
+
+## Existing Plugins
+
+### Illuma-reflect - Injections via constructor metadata and property decorators
+- GitHub: [git-zodyac/illuma-reflect](https://github.com/git-zodyac/illuma-reflect)
+- NPM: [@zodyac/illuma-reflect](https://www.npmjs.com/package/@zodyac/illuma-reflect)
 
 ## Next Steps
 

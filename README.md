@@ -148,6 +148,14 @@ See [Testing Guide](./docs/TESTKIT.md) for comprehensive examples.
 | [API Reference](./docs/API.md) | Complete API documentation |
 | [Troubleshooting](./docs/TROUBLESHOOTING.md) | Error codes and solutions |
 
+## 🔌 Plugins
+
+Illuma supports a plugin system for extending functionality. Check out these plugins:
+
+- **[illuma-reflect](https://github.com/git-zodyac/illuma-reflect)** – Constructor metadata and property decorator injection support
+
+See [Plugins Guide](./docs/PLUGINS.md) for creating your own plugins.
+
 ## 📄 License
 
 MIT © [bebrasmell](https://github.com/git-zodyac)
