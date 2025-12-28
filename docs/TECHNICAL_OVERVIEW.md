@@ -175,7 +175,7 @@ Represents a singleton injectable:
 ```typescript
 class ProtoNodeSingle<T> {
   public readonly token: NodeToken<T>;
-  public readonly injections: Set<InjectionNode<any>>;
+  public readonly injections: Set<iInjectionNode<any>>;
   public factory: (() => T) | null = null;
 }
 ```
@@ -237,7 +237,7 @@ Transparent nodes are special proto nodes used for factories provided directly t
 ```typescript
 class ProtoNodeTransparent<T> {
   public readonly factory: () => T;
-  public readonly injections: Set<InjectionNode<any>>;
+  public readonly injections: Set<iInjectionNode<any>>;
   public readonly parent: ProtoNodeSingle<T> | ProtoNodeMulti<T>;
 }
 ```
@@ -349,7 +349,7 @@ The `InjectionContext` is a global singleton that manages the state during facto
 ```typescript
 abstract class InjectionContext {
   public static contextOpen = false;
-  public static calls = new Set<InjectionNode<any>>();
+  public static calls = new Set<iInjectionNode<any>>();
   public static injector: InjectorFn | null = null;
 }
 ```
@@ -382,7 +382,7 @@ InjectionContext.close();
 
 During scanning:
 - Context is open but `injector` is null
-- `nodeInject()` records the call and returns a placeholder `InjectionNode`
+- `nodeInject()` records the call and returns a placeholder `iInjectionNode`
 - Factory execution may throw errors (which are caught and ignored)
 - The goal is to discover what dependencies are needed, not to construct final instances
 
@@ -405,16 +405,14 @@ During instantiation:
 - Factory executes successfully and returns the created instance
 - Context is closed after factory completes
 
-### InjectionNode
+### iInjectionNode
 
-An `InjectionNode` represents a single dependency injection point:
+An `iInjectionNode` represents a single dependency injection point:
 
 ```typescript
-class InjectionNode<T> {
-  constructor(
-    public readonly token: NodeToken<T> | MultiNodeToken<T>,
-    public readonly optional = false
-  ) {}
+interface iInjectionNode<T> {
+  readonly token: NodeToken<T> | MultiNodeToken<T>;
+  readonly optional: boolean;
 }
 ```
 
@@ -441,9 +439,9 @@ The function behaves differently depending on the context state:
 const LoggerToken = new NodeToken<Logger>('Logger');
 
 const userServiceFactory = () => {
-  // During scanning, nodeInject creates and returns an InjectionNode
+  // During scanning, nodeInject creates and returns an iInjectionNode
   // It's recorded in InjectionContext.calls
-  return new UserService();
+  return new UserService();i
 };
 ```
 
@@ -847,9 +845,9 @@ container._protoNodes = Map {
     token: UserServiceToken,
     factory: () => new UserService(),
     injections: Set {
-      InjectionNode(LoggerToken, false),
-      InjectionNode(ConfigToken, false),
-      InjectionNode(PluginToken, false)
+      { token: LoggerToken, optional: false },
+      { token: ConfigToken, optional: false },
+      { token: PluginToken, optional: false }
     }
   },
   AuthPluginToken => ProtoNodeSingle {

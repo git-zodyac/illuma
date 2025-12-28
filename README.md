@@ -9,6 +9,7 @@ A lightweight, type-safe dependency injection container for TypeScript. Zero dep
 
 > [!NOTE]
 > This package is in early development. Expect API changes in minor versions.
+> Planned stable release: v2.0.0
 
 ## ✨ Features
 

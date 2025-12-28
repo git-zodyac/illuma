@@ -7,9 +7,7 @@ import type { MultiNodeToken, NodeToken } from "../api/token";
  * @template T - The type of value being injected
  * @internal
  */
-export class InjectionNode<T> {
-  constructor(
-    public readonly token: NodeToken<T> | MultiNodeToken<T>,
-    public readonly optional = false,
-  ) {}
+export interface iInjectionNode<T> {
+  readonly token: NodeToken<T> | MultiNodeToken<T>;
+  readonly optional: boolean;
 }

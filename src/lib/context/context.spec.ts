@@ -1,12 +1,11 @@
 import { NodeToken } from "../api";
 import { InjectionError } from "../errors";
 import { InjectionContext } from "./context";
-import { InjectionNode } from "./node";
 
 describe("InjectionContext", () => {
   afterEach(() => {
     // Ensure context is closed after each test
-    InjectionContext.close();
+    InjectionContext.closeAndReport();
   });
 
   describe("open", () => {
@@ -20,13 +19,12 @@ describe("InjectionContext", () => {
 
     it("should reset state when reopening", () => {
       const token = new NodeToken("test");
-      const node = new InjectionNode(token);
 
       InjectionContext.open();
-      InjectionContext.calls.add(node);
+      InjectionContext.addDep({ token, optional: false });
 
       InjectionContext.open();
-      expect(InjectionContext.calls.size).toBe(0);
+      expect(InjectionContext.closeAndReport().size).toBe(0);
     });
   });
 
@@ -34,37 +32,37 @@ describe("InjectionContext", () => {
     it("should close context and reset state", () => {
       const mockInjector = jest.fn();
       const token = new NodeToken("test");
-      const node = new InjectionNode(token);
 
       InjectionContext.open(mockInjector);
-      InjectionContext.calls.add(node);
-
-      InjectionContext.close();
+      InjectionContext.addDep({ token, optional: false });
+      InjectionContext.closeAndReport();
 
       expect(InjectionContext.contextOpen).toBe(false);
       expect(InjectionContext.injector).toBeNull();
-      expect(InjectionContext.calls.size).toBe(0);
+      // biome-ignore lint/complexity/useLiteralKeys: Checking against original set ref
+      expect(InjectionContext["_calls"].size).toBe(0);
     });
   });
 
   describe("getCalls", () => {
     it("should return copy of calls when context is open", () => {
       const token = new NodeToken("test");
-      const node = new InjectionNode(token);
+      const node = { token, optional: false };
 
       InjectionContext.open();
-      InjectionContext.calls.add(node);
+      InjectionContext.addDep(node);
 
-      const calls = InjectionContext.getCalls();
+      const calls = InjectionContext.closeAndReport();
 
       expect(calls.size).toBe(1);
       expect(calls.has(node)).toBe(true);
-      expect(calls).not.toBe(InjectionContext.calls);
+      // biome-ignore lint/complexity/useLiteralKeys: Checking against original set ref
+      expect(calls).not.toBe(InjectionContext["_calls"]);
     });
 
     it("should throw error when context is not open", () => {
       expect(() => {
-        InjectionContext.getCalls();
+        InjectionContext.addDep({ token: new NodeToken("test"), optional: false });
       }).toThrow(InjectionError.calledUtilsOutsideContext());
     });
   });
@@ -73,12 +71,13 @@ describe("InjectionContext", () => {
     it("should scan factory and return injection calls", () => {
       const token1 = new NodeToken("token1");
       const token2 = new NodeToken("token2");
-      const node1 = new InjectionNode(token1);
-      const node2 = new InjectionNode(token2);
+
+      const node1 = { token: token1, optional: false };
+      const node2 = { token: token2, optional: false };
 
       const factory = () => {
-        InjectionContext.calls.add(node1);
-        InjectionContext.calls.add(node2);
+        InjectionContext.addDep(node1);
+        InjectionContext.addDep(node2);
       };
 
       const injections = InjectionContext.scan(factory);
@@ -91,11 +90,16 @@ describe("InjectionContext", () => {
 
     it("should handle factory errors gracefully", () => {
       const token = new NodeToken("test");
-      const node = new InjectionNode(token);
+      const token2 = new NodeToken("other");
+
+      const node = { token, optional: false };
+      const node2 = { token: token2, optional: false };
 
       const factory = () => {
-        InjectionContext.calls.add(node);
+        InjectionContext.addDep(node);
         throw new Error("Factory error");
+        // biome-ignore lint/correctness/noUnreachable: Obvious example
+        InjectionContext.addDep(node2);
       };
 
       const injections = InjectionContext.scan(factory);

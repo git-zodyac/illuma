@@ -36,7 +36,7 @@ describe("Package Entrypoints", () => {
     it("should export plugin modules", async () => {
       const pluginsExports = await import("./plugins");
 
-      expect(pluginsExports.PluginContainer).toBeDefined();
+      expect(pluginsExports.Illuma).toBeDefined();
       expect(pluginsExports.DiagnosticsDefaultReporter).toBeDefined();
     });
   });

@@ -42,4 +42,4 @@ jobs:
 
       # Run type check
       - name: Type Check
-        run: tsc --noEmit
+        run: yarn typecheck

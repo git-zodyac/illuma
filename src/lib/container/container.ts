@@ -11,7 +11,7 @@ import {
 import { isConstructor } from "../api/decorator";
 import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
-import { PluginContainer } from "../plugins/core/plugin-container";
+import { Illuma } from "../plugins/core/plugin-container";
 import { DiagnosticsDefaultReporter } from "../plugins/diagnostics/default-impl";
 import type { ProtoNode, TreeNode, UpstreamGetter } from "../provider";
 import {
@@ -45,7 +45,7 @@ export interface iContainerOptions {
   parent?: iDIContainer;
 }
 
-export class NodeContainer extends PluginContainer implements iDIContainer {
+export class NodeContainer extends Illuma implements iDIContainer {
   private _bootstrapped = false;
   private _rootNode?: TreeRootNode;
 
@@ -58,7 +58,7 @@ export class NodeContainer extends PluginContainer implements iDIContainer {
 
     this._parent = _opts?.parent;
     if (_opts?.diagnostics) {
-      PluginContainer.extendDiagnostics(new DiagnosticsDefaultReporter());
+      Illuma.extendDiagnostics(new DiagnosticsDefaultReporter());
     }
   }
 
@@ -303,7 +303,7 @@ export class NodeContainer extends PluginContainer implements iDIContainer {
           return node.proto.token !== Injector;
         });
 
-      PluginContainer.onReport({
+      Illuma.onReport({
         totalNodes: allNodes,
         unusedNodes: unusedNodes,
         bootstrapDuration: duration,

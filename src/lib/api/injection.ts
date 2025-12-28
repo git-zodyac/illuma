@@ -1,4 +1,4 @@
-import { InjectionContext, InjectionNode } from "../context";
+import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
 import type { ExtractInjectedType, iNodeInjectorOptions } from "../types";
 import { getInjectableToken, isInjectable } from "./decorator";
@@ -76,8 +76,8 @@ export function nodeInject<
 
   if (!isNodeBase(token)) throw InjectionError.invalidProvider(String(token));
 
-  const injection = new InjectionNode(token, options?.optional);
-  InjectionContext.calls.add(injection);
+  const injection = { token, optional: options?.optional ?? false };
+  InjectionContext.addDep(injection);
 
   if (InjectionContext.injector) {
     return InjectionContext.injector(token, options?.optional);

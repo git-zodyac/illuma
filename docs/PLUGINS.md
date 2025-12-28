@@ -34,16 +34,16 @@ Illuma provides a plugin system that allows you to extend its core functionality
 
 ## Overview
 
-The `PluginContainer` class is the central hub for managing plugins in Illuma. It provides static methods to register plugins globally, which will then be automatically invoked at the appropriate times during the container lifecycle.
+The `Illuma` class is the central hub for managing plugins in Illuma. It provides static methods to register plugins globally, which will then be automatically invoked at the appropriate times during the container lifecycle.
 
 ```typescript
-import { PluginContainer } from '@zodyac/illuma';
+import { Illuma } from '@zodyac/illuma';
 
 // Register a context scanner
-PluginContainer.extendContextScanner(myScanner);
+Illuma.extendContextScanner(myScanner);
 
 // Register a diagnostics module
-PluginContainer.extendDiagnostics(myDiagnostics);
+Illuma.extendDiagnostics(myDiagnostics);
 ```
 
 **Key characteristics:**
@@ -73,7 +73,7 @@ Context scanners are plugins that extend Illuma's ability to detect dependency i
 A context scanner must implement the `iContextScanner` interface:
 
 ```typescript
-import type { InjectionNode } from '@zodyac/illuma';
+import type { iInjectionNode } from '@zodyac/illuma';
 
 interface iContextScanner {
   /**
@@ -82,7 +82,7 @@ interface iContextScanner {
    * @param factory - The factory function to scan for dependencies
    * @returns A set of detected injection nodes
    */
-  scan(factory: any): Set<InjectionNode<any>>;
+  scan(factory: any): Set<iInjectionNode<any>>;
 }
 ```
 
@@ -90,7 +90,7 @@ interface iContextScanner {
 - `factory`: The factory function being analyzed (could be a class constructor or factory function)
 
 **Returns:**
-- A `Set<InjectionNode<any>>` containing all detected injection points
+- A `Set<iInjectionNode<any>>` containing all detected injection points
 
 **Important notes:**
 - Register scanners **before** providing services
@@ -224,11 +224,11 @@ export class JsonDiagnosticsLogger implements iDiagnosticsModule {
 Diagnostics modules should be registered before bootstrapping the container:
 
 ```typescript
-import { PluginContainer, NodeContainer } from '@zodyac/illuma';
+import { Illuma, NodeContainer } from '@zodyac/illuma';
 import { PerformanceReporter } from './diagnostics';
 
 // 1. Register diagnostics module
-PluginContainer.extendDiagnostics(new PerformanceReporter());
+Illuma.extendDiagnostics(new PerformanceReporter());
 
 // 2. Create and configure container
 const container = new NodeContainer({ measurePerformance: true });
@@ -265,7 +265,7 @@ container.bootstrap();
 **Scanner performance tips:**
 ```typescript
 export class OptimizedScanner implements iContextScanner {
-  public scan(factory: any): Set<InjectionNode<any>> {
+  public scan(factory: any): Set<iInjectionNode<any>> {
     // Early return for non-functions just in case for future API changes
     if (typeof factory !== 'function') {
       return new Set();
@@ -292,8 +292,7 @@ export class OptimizedScanner implements iContextScanner {
 Support property-based injection using decorators:
 
 ```typescript
-import { InjectionNode } from '@zodyac/illuma';
-import type { iContextScanner, NodeToken } from '@zodyac/illuma';
+import type { iContextScanner, NodeToken, iInjectionNode } from '@zodyac/illuma';
 
 const PROPERTY_INJECT_KEY = Symbol('di:properties');
 
@@ -308,8 +307,8 @@ export function InjectProperty<T>(token: NodeToken<T>) {
 
 // Scanner implementation
 export class PropertyInjectionScanner implements iContextScanner {
-  public scan(factory: any): Set<InjectionNode<any>> {
-    const injections = new Set<InjectionNode<any>>();
+  public scan(factory: any): Set<iInjectionNode<any>> {
+    const injections = new Set<iInjectionNode<any>>();
 
     if (typeof factory !== 'function') {
       return injections;
@@ -321,7 +320,7 @@ export class PropertyInjectionScanner implements iContextScanner {
     }
 
     for (const { token } of properties) {
-      injections.add(new InjectionNode(token, false));
+      injections.add({ token, optional: false });
     }
 
     return injections;
@@ -332,7 +331,7 @@ export class PropertyInjectionScanner implements iContextScanner {
 Register the scanner:
 
 ```typescript
-PluginContainer.extendContextScanner(new PropertyInjectionScanner());
+Illuma.extendContextScanner(new PropertyInjectionScanner());
 ```
 
 Now properties decorated with `@InjectProperty()` will be detected, but not injected automatically. You will need to implement property injection logic yourself.
@@ -374,7 +373,7 @@ export class ConditionalReporter implements iDiagnosticsModule {
 }
 
 // Usage
-PluginContainer.extendDiagnostics(
+Illuma.extendDiagnostics(
   new ConditionalReporter(process.env.NODE_ENV === 'development')
 );
 ```
@@ -387,8 +386,7 @@ Understanding when plugins execute is crucial for proper usage:
 
 ```typescript
 // 1. Register plugins (before container creation)
-PluginContainer.extendContextScanner(myScanner);
-PluginContainer.extendDiagnostics(myDiagnostics);
+Illuma.extendContextScanner(myScanner);
 
 // 2. Create container
 const container = new NodeContainer({ measurePerformance: true });

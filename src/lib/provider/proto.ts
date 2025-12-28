@@ -1,13 +1,13 @@
 import type { NodeBase } from "../api";
 import { MultiNodeToken, NodeToken } from "../api";
-import type { InjectionNode } from "../context";
+import type { iInjectionNode } from "../context";
 import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
 
 export class ProtoNodeSingle<T = any> {
   // Metadata
   public readonly token: NodeToken<T>;
-  public readonly injections: Set<InjectionNode<any>>;
+  public readonly injections: Set<iInjectionNode<any>>;
 
   // Instantiation
   public factory: (() => T) | null = null;
@@ -39,7 +39,7 @@ export class ProtoNodeSingle<T = any> {
 
 export class ProtoNodeTransparent<T = any> {
   public readonly factory: () => T;
-  public readonly injections: Set<InjectionNode<any>>;
+  public readonly injections: Set<iInjectionNode<any>>;
 
   constructor(
     public readonly parent: ProtoNodeSingle<T> | ProtoNodeMulti<T>,

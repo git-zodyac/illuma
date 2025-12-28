@@ -4,13 +4,13 @@ import type { iDiagnosticsModule, iDiagnosticsReport } from "../diagnostics/type
 /**
  * Global plugin container for managing core plugins such as diagnostics and context scanners.
  */
-export abstract class PluginContainer {
+export abstract class Illuma {
   private static readonly _diagnostics = [] as iDiagnosticsModule[];
   private static readonly _scanners = [] as iContextScanner[];
 
   /** @internal */
   public static get contextScanners(): ReadonlyArray<iContextScanner> {
-    return PluginContainer._scanners;
+    return Illuma._scanners;
   }
 
   /**
@@ -20,7 +20,7 @@ export abstract class PluginContainer {
    * @param m - The diagnostics module instance to add
    */
   public static extendDiagnostics(m: iDiagnosticsModule): void {
-    PluginContainer._diagnostics.push(m);
+    Illuma._diagnostics.push(m);
   }
 
   /**
@@ -30,10 +30,10 @@ export abstract class PluginContainer {
    * @param scanner - The context scanner instance to add
    */
   public static extendContextScanner(scanner: iContextScanner): void {
-    PluginContainer._scanners.push(scanner);
+    Illuma._scanners.push(scanner);
   }
 
   protected static onReport(report: iDiagnosticsReport): void {
-    for (const diag of PluginContainer._diagnostics) diag.onReport(report);
+    for (const diag of Illuma._diagnostics) diag.onReport(report);
   }
 }

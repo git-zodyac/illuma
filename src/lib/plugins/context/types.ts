@@ -1,4 +1,4 @@
-import type { InjectionNode } from "../../context/node";
+import type { iInjectionNode } from "../../context/node";
 
 /**
  * An extension that can scan a factory function for dependency injections.
@@ -14,5 +14,5 @@ export interface iContextScanner {
    * @param factory - The factory function to scan
    * @returns A set of detected injection nodes
    */
-  scan(factory: any): Set<InjectionNode<any>>;
+  scan(factory: any): Set<iInjectionNode<any>>;
 }

@@ -1,12 +1,28 @@
-import { InjectionContext, InjectionNode } from "../context";
+import { InjectionContext, type iInjectionNode } from "../context";
 import { InjectionError } from "../errors";
 import { INJECTION_SYMBOL, NodeInjectable } from "./decorator";
 import { nodeInject } from "./injection";
 import { MultiNodeToken, NodeToken } from "./token";
 
+function asInjectionNode<T = any>(node: any): iInjectionNode<T> {
+  return node as iInjectionNode<T>;
+}
+
+function expectNode<T>(
+  target: any,
+  token: NodeToken<T> | MultiNodeToken<T>,
+  optional?: boolean,
+): void {
+  const node = asInjectionNode(target);
+  expect(node.token).toBe(token);
+
+  if (typeof optional === "undefined") return;
+  expect(node.optional).toBe(optional);
+}
+
 describe("nodeInject", () => {
   afterEach(() => {
-    InjectionContext.close();
+    InjectionContext.closeAndReport();
   });
 
   describe("Context validation", () => {
@@ -24,8 +40,7 @@ describe("nodeInject", () => {
       InjectionContext.open();
 
       const result = nodeInject(token);
-
-      expect(result).toBeInstanceOf(InjectionNode);
+      expectNode(result, token, false);
     });
   });
 
@@ -40,26 +55,6 @@ describe("nodeInject", () => {
       );
     });
 
-    it("should accept NodeToken", () => {
-      InjectionContext.open();
-      const token = new NodeToken<string>("TestToken");
-
-      const result = nodeInject(token);
-
-      expect(result).toBeInstanceOf(InjectionNode);
-      expect((result as unknown as InjectionNode<string>).token).toBe(token);
-    });
-
-    it("should accept MultiNodeToken", () => {
-      InjectionContext.open();
-      const token = new MultiNodeToken<string>("MultiToken");
-
-      const result = nodeInject(token);
-
-      expect(result).toBeInstanceOf(InjectionNode);
-      expect((result as unknown as InjectionNode<string>).token).toBe(token);
-    });
-
     it("should accept class decorated with @NodeInjectable", () => {
       @NodeInjectable()
       class TestService {}
@@ -67,11 +62,8 @@ describe("nodeInject", () => {
       InjectionContext.open();
 
       const result = nodeInject(TestService);
-
-      expect(result).toBeInstanceOf(InjectionNode);
-      expect((result as InjectionNode<TestService>).token).toBe(
-        (TestService as any)[INJECTION_SYMBOL],
-      );
+      const token = (TestService as any)[INJECTION_SYMBOL];
+      expectNode(result, token, false);
     });
 
     it("should throw error for undecorated class", () => {
@@ -93,7 +85,7 @@ describe("nodeInject", () => {
 
       nodeInject(token);
 
-      const calls = InjectionContext.getCalls();
+      const calls = InjectionContext.closeAndReport();
       expect(calls.size).toBe(1);
       const [call] = Array.from(calls);
       expect(call.token).toBe(token);
@@ -110,7 +102,7 @@ describe("nodeInject", () => {
       nodeInject(token2);
       nodeInject(token3);
 
-      const calls = InjectionContext.getCalls();
+      const calls = InjectionContext.closeAndReport();
       expect(calls.size).toBe(3);
     });
 
@@ -122,28 +114,18 @@ describe("nodeInject", () => {
       nodeInject(token);
       nodeInject(token);
 
-      const calls = InjectionContext.getCalls();
+      const calls = InjectionContext.closeAndReport();
       expect(calls.size).toBe(3);
     });
   });
 
   describe("Optional parameter", () => {
-    it("should create InjectionNode with optional=false by default", () => {
-      const token = new NodeToken<string>("TestToken");
-      InjectionContext.open();
-
-      const result = nodeInject(token);
-
-      expect((result as unknown as InjectionNode<string>).optional).toBe(false);
-    });
-
     it("should create InjectionNode with optional=true when specified", () => {
       const token = new NodeToken<string>("TestToken");
       InjectionContext.open();
 
       const result = nodeInject(token, { optional: true });
-
-      expect((result as unknown as InjectionNode<string>).optional).toBe(true);
+      expectNode(result, token, true);
     });
 
     it("should create InjectionNode with optional=false when explicitly specified", () => {
@@ -151,21 +133,11 @@ describe("nodeInject", () => {
       InjectionContext.open();
 
       const result = nodeInject(token, { optional: false });
-
-      expect((result as unknown as InjectionNode<string>).optional).toBe(false);
+      expectNode(result, token, false);
     });
   });
 
   describe("Injector function delegation", () => {
-    it("should return InjectionNode when no injector is set", () => {
-      const token = new NodeToken<string>("TestToken");
-      InjectionContext.open();
-
-      const result = nodeInject(token);
-
-      expect(result).toBeInstanceOf(InjectionNode);
-    });
-
     it("should delegate to injector function when set", () => {
       const token = new NodeToken<string>("TestToken");
       const mockInjector = jest.fn().mockReturnValue("injected value");
@@ -213,7 +185,7 @@ describe("nodeInject", () => {
 
       nodeInject(token);
 
-      const calls = InjectionContext.getCalls();
+      const calls = InjectionContext.closeAndReport();
       expect(calls.size).toBe(1);
     });
   });
@@ -275,8 +247,7 @@ describe("nodeInject", () => {
 
       InjectionContext.open();
       const result = nodeInject(ServiceA);
-
-      expect((result as InjectionNode<ServiceA>).token).toBe(extractedToken);
+      expectNode(result, extractedToken);
     });
 
     it("should handle class without INJECTION_SYMBOL", () => {
@@ -294,8 +265,7 @@ describe("nodeInject", () => {
       InjectionContext.open(null as any);
 
       const result = nodeInject(token);
-
-      expect(result).toBeInstanceOf(InjectionNode);
+      expectNode(result, token);
     });
 
     it("should handle injector throwing error", () => {
@@ -309,34 +279,22 @@ describe("nodeInject", () => {
       expect(() => nodeInject(token)).toThrow("Injector error");
     });
 
-    it("should work with tokens having special characters in names", () => {
-      const token = new NodeToken<string>("Test-Token_123!@#");
-      InjectionContext.open();
-
-      const result = nodeInject(token);
-
-      expect(result).toBeInstanceOf(InjectionNode);
-      expect((result as unknown as InjectionNode<string>).token.name).toBe(
-        "Test-Token_123!@#",
-      );
-    });
-
     it("should handle rapid context open/close cycles", () => {
       const token = new NodeToken<string>("TestToken");
 
       InjectionContext.open();
       nodeInject(token);
-      InjectionContext.close();
+      InjectionContext.closeAndReport();
 
       InjectionContext.open();
       nodeInject(token);
-      InjectionContext.close();
+      InjectionContext.closeAndReport();
 
       InjectionContext.open();
       const result = nodeInject(token);
 
-      expect(result).toBeInstanceOf(InjectionNode);
-      expect(InjectionContext.getCalls().size).toBe(1);
+      expectNode(result, token, false);
+      expect(InjectionContext.closeAndReport().size).toBe(1);
     });
   });
 
@@ -347,13 +305,11 @@ describe("nodeInject", () => {
 
       InjectionContext.open();
       nodeInject(token1);
-      const calls1 = InjectionContext.getCalls();
-      InjectionContext.close();
+      const calls1 = InjectionContext.closeAndReport();
 
       InjectionContext.open();
       nodeInject(token2);
-      const calls2 = InjectionContext.getCalls();
-      InjectionContext.close();
+      const calls2 = InjectionContext.closeAndReport();
 
       expect(calls1.size).toBe(1);
       expect(calls2.size).toBe(1);
