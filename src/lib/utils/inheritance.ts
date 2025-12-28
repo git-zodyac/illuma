@@ -148,3 +148,59 @@ export function injectAsync<T>(
     return cache;
   };
 }
+
+export interface iEntrypointConfig<T extends Token<any>> {
+  readonly entrypoint: T;
+  readonly providers: Provider[];
+}
+
+/**
+ * Creates an async function that injects a sub-container with a specific entrypoint.
+ * The returned function, when called, will create a new sub-container,
+ * provide the given providers, bootstrap it, and return the resolved instance(s) of the entrypoint.
+ *
+ * @note
+ * `injectEntryAsync` should be called within an injection context where the parent container is accessible.
+ *
+ * @template T - The type of the entrypoint token
+ * @param fn - A function that returns an entrypoint configuration or a promise resolving to one
+ * @returns A function that returns a promise resolving to the injected instance(s) of the entrypoint
+ */
+export function injectEntryAsync<T>(
+  fn: MaybeAsyncFactory<iEntrypointConfig<NodeToken<T>>>,
+  opts?: iInjectionOptions,
+): () => Promise<T[]>;
+export function injectEntryAsync<T>(
+  fn: MaybeAsyncFactory<iEntrypointConfig<Ctor<T>>>,
+  opts?: iInjectionOptions,
+): () => Promise<T>;
+export function injectEntryAsync<T>(
+  fn: MaybeAsyncFactory<iEntrypointConfig<MultiNodeToken<T>>>,
+  opts?: iInjectionOptions,
+): () => Promise<T>;
+export function injectEntryAsync<T>(
+  fn: MaybeAsyncFactory<iEntrypointConfig<Token<T>>>,
+  opts?: iInjectionOptions,
+): () => Promise<T | T[]> {
+  const { container: parent } = nodeInject(Injector);
+  const factory = (async () => {
+    const { entrypoint, providers } = await fn();
+
+    const subContainer = new NodeContainer({ parent });
+
+    if (opts?.overrides) subContainer.provide(opts.overrides);
+    subContainer.provide(providers);
+    subContainer.bootstrap();
+
+    return subContainer.get(extractToken(entrypoint) as any);
+  }) as () => Promise<T | T[]>;
+
+  const withCache = opts?.withCache ?? true;
+  if (!withCache) return factory;
+
+  let cache: Promise<T | T[]> | null = null;
+  return () => {
+    cache ??= factory();
+    return cache;
+  };
+}

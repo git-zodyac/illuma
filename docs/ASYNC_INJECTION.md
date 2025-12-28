@@ -15,6 +15,7 @@ This guide covers advanced dependency injection patterns using `injectAsync`, `i
     - [Type safety](#type-safety)
     - [Caching behavior](#caching-behavior)
     - [Overriding dependencies](#overriding-dependencies)
+  - [injectEntryAsync](#injectEntryAsync)
   - [injectGroupAsync](#injectgroupasync)
     - [Basic usage](#basic-usage-1)
     - [Parent-Child relationships](#parent-child-relationships)
@@ -41,6 +42,7 @@ Illuma provides three utilities for advanced async dependency injection:
 | Utility | Purpose | Returns |
 |---------|---------|---------|
 | `injectAsync` | Lazily inject a single dependency | The dependency instance |
+| `injectEntryAsync` | Create sub-container and resolve specific entrypoint | The entrypoint instance |
 | `injectGroupAsync` | Create isolated sub-container with array of providers | An injector |
 | `injectChildrenAsync` | *(deprecated)* Create sub-container with provider set | An injector |
 
@@ -199,6 +201,71 @@ class MyService {
 ```
 
 > **Important**: If both the main provider and overrides provide the same token, a duplicate provider error will be thrown.
+
+## injectEntryAsync
+
+`injectEntryAsync` is similar to `injectGroupAsync` but specifically designed to return a resolved instance of an entrypoint token from the created sub-container.
+
+### Basic usage
+
+```typescript
+import { injectEntryAsync, NodeInjectable } from 'illuma';
+
+@NodeInjectable()
+class Logger {
+  log(msg: string) { console.log(msg); }
+}
+
+@NodeInjectable()
+class ReportService {
+  constructor(private logger: Logger) {}
+  
+  generate() {
+    this.logger.log('Generating report...');
+    return 'Report Data';
+  }
+}
+
+@NodeInjectable()
+class AppService {
+  // Lazily load ReportService and its dependencies
+  private readonly getReportService = injectEntryAsync(async () => {
+    // You can use dynamic imports here
+    // const { ReportService, Logger } = await import('./report');
+    return {
+      entrypoint: ReportService,
+      providers: [ReportService, Logger]
+    };
+  });
+
+  public async downloadReport() {
+    // Creates sub-container, resolves ReportService with Logger injected
+    const reportService = await this.getReportService();
+    return reportService.generate();
+  }
+}
+```
+
+### When to use
+
+Use `injectEntryAsync` when you want to:
+1.  Create a sub-container with multiple providers
+2.  Immediately resolve a specific service from that sub-container
+3.  Avoid manually getting the injector and calling `get()`
+
+```typescript
+// With injectGroupAsync
+const getContainer = injectGroupAsync(() => [Service, Helper]);
+const injector = await getContainer();
+const service = injector.get(Service);
+
+// With injectEntryAsync
+const getService = injectEntryAsync(() => ({
+  entrypoint: Service,
+  providers: [Service, Helper]
+}));
+const service = await getService();
+```
 
 ## injectGroupAsync
 

@@ -349,6 +349,63 @@ public async executePlugins() {
 }
 ```
 
+### injectEntryAsync
+
+Create a sub-container with a specific entrypoint token and providers.
+
+```typescript
+function injectEntryAsync<T>(
+  fn: () => iEntrypointConfig<Token<T>> | Promise<iEntrypointConfig<Token<T>>>,
+  options?: {
+    withCache?: boolean;
+    overrides?: Provider[];
+  }
+): () => Promise<T | T[]>
+```
+
+```typescript
+// in user.service.ts
+
+const USERS_CONFIG = new NodeToken<{ table: string }>('USERS_CONFIG');
+
+@NodeInjectable()
+class UserService {
+  private readonly db = nodeInject(DatabaseService); // Declared in parent container
+  private readonly config = nodeInject(USERS_CONFIG);
+
+  public getUsers() {
+    return this.db.query(`SELECT * FROM ${this.config.table}`);
+  }
+}
+
+export const userModule: iEntrypointConfig<UserService> = {
+  entrypoint: UserService,
+  providers: [
+    UserService,
+    { provide: USERS_CONFIG, value: { table: 'users' } }
+  ],
+};
+```
+
+```typescript
+
+// in app.service.ts
+
+@NodeInjectable()
+class AppService {
+  private readonly getUserService = injectEntryAsync(() =>
+    import('./user.service').then(m => m.userModule)
+  );
+
+  public async listUsers() {
+    const userService = await this.getUserService();
+    // userService is resolved with DatabaseService injected from parent container
+    // and USERS_CONFIG provided in the sub-container
+    return userService.getUsers();
+  }
+}
+```
+
 ### injectChildrenAsync
 
 > **Deprecated:** Use `injectGroupAsync()` instead.

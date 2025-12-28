@@ -7,7 +7,12 @@ import {
 } from "../api";
 import { NodeContainer } from "../container";
 import { InjectionError } from "../errors";
-import { injectAsync, injectChildrenAsync, injectGroupAsync } from "./inheritance";
+import {
+  injectAsync,
+  injectChildrenAsync,
+  injectEntryAsync,
+  injectGroupAsync,
+} from "./inheritance";
 
 describe("[BC] injectChildrenAsync", () => {
   it("should throw when called outside injection context", () => {
@@ -570,5 +575,187 @@ describe("injectGroupAsync", () => {
     const parentService = parent.get(ParentService);
 
     await expect(parentService.createSubContainer()).rejects.toThrow(InjectionError);
+  });
+});
+
+describe("injectEntryAsync", () => {
+  it("should throw when called outside injection context", () => {
+    expect(() =>
+      injectEntryAsync(() => ({
+        entrypoint: new NodeToken("test"),
+        providers: [],
+      })),
+    ).toThrow(InjectionError);
+  });
+
+  it("should create sub-container and return entrypoint instance", async () => {
+    const parent = new NodeContainer();
+    const token = new NodeToken<string>("token");
+
+    @NodeInjectable()
+    class ParentService {
+      private readonly _getEntrypoint = injectEntryAsync(() => ({
+        entrypoint: token,
+        providers: [{ provide: token, value: "value" }],
+      }));
+
+      public getEntrypoint() {
+        return this._getEntrypoint();
+      }
+    }
+
+    parent.provide(ParentService);
+    parent.bootstrap();
+
+    const parentService = parent.get(ParentService);
+    const result = await parentService.getEntrypoint();
+
+    expect(result).toBe("value");
+  });
+
+  it("should support async factory", async () => {
+    const parent = new NodeContainer();
+    const token = new NodeToken<string>("token");
+
+    @NodeInjectable()
+    class ParentService {
+      private readonly _getEntrypoint = injectEntryAsync(async () => ({
+        entrypoint: token,
+        providers: [{ provide: token, value: "async-value" }],
+      }));
+
+      public getEntrypoint() {
+        return this._getEntrypoint();
+      }
+    }
+
+    parent.provide(ParentService);
+    parent.bootstrap();
+
+    const parentService = parent.get(ParentService);
+    const result = await parentService.getEntrypoint();
+
+    expect(result).toBe("async-value");
+  });
+
+  it("should create instance with provided deps", async () => {
+    const parent = new NodeContainer();
+    const token = new NodeToken<string>("token");
+
+    @NodeInjectable()
+    class ChildService {
+      public readonly value = nodeInject(token);
+    }
+
+    @NodeInjectable()
+    class ParentService {
+      private readonly _getEntrypoint = injectEntryAsync(() => ({
+        entrypoint: ChildService,
+        providers: [ChildService, { provide: token, value: "value" }],
+      }));
+
+      public getEntrypoint() {
+        return this._getEntrypoint();
+      }
+    }
+
+    parent.provide(ParentService);
+    parent.bootstrap();
+
+    const parentService = parent.get(ParentService);
+    const childService = await parentService.getEntrypoint();
+
+    expect(childService).toBeInstanceOf(ChildService);
+    expect(childService.value).toBe("value");
+  });
+
+  it("should reproduce API.md example", async () => {
+    const parent = new NodeContainer();
+
+    @NodeInjectable()
+    class DatabaseService {
+      public query(sql: string) {
+        return `Result for ${sql}`;
+      }
+    }
+
+    const USERS_CONFIG = new NodeToken<{ table: string }>("USERS_CONFIG");
+
+    @NodeInjectable()
+    class UserService {
+      private readonly db = nodeInject(DatabaseService);
+      private readonly config = nodeInject(USERS_CONFIG);
+
+      public getUsers() {
+        return this.db.query(`SELECT * FROM ${this.config.table}`);
+      }
+    }
+
+    @NodeInjectable()
+    class AppService {
+      private readonly getUserService = injectEntryAsync(() => ({
+        entrypoint: UserService,
+        providers: [UserService, { provide: USERS_CONFIG, value: { table: "users" } }],
+      }));
+
+      public async listUsers() {
+        const userService = await this.getUserService();
+        return userService.getUsers();
+      }
+    }
+
+    parent.provide([AppService, DatabaseService]);
+    parent.bootstrap();
+
+    const appService = parent.get(AppService);
+    const result = await appService.listUsers();
+
+    expect(result).toBe("Result for SELECT * FROM users");
+  });
+
+  it("should reproduce ASYNC_INJECTION.md example", async () => {
+    const parent = new NodeContainer();
+    const logSpy = jest.fn();
+
+    @NodeInjectable()
+    class Logger {
+      public log(msg: string) {
+        logSpy(msg);
+      }
+    }
+
+    @NodeInjectable()
+    class ReportService {
+      private readonly logger = nodeInject(Logger);
+
+      generate() {
+        this.logger.log("Generating report...");
+        return "Report Data";
+      }
+    }
+
+    @NodeInjectable()
+    class AppService {
+      private readonly getReportService = injectEntryAsync(() => {
+        return Promise.resolve({
+          entrypoint: ReportService,
+          providers: [ReportService, Logger],
+        });
+      });
+
+      public async downloadReport() {
+        const reportService = await this.getReportService();
+        return reportService.generate();
+      }
+    }
+
+    parent.provide(AppService);
+    parent.bootstrap();
+
+    const appService = parent.get(AppService);
+    const result = await appService.downloadReport();
+
+    expect(result).toBe("Report Data");
+    expect(logSpy).toHaveBeenCalledWith("Generating report...");
   });
 });

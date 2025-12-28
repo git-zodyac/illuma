@@ -1,6 +1,5 @@
 import type { NodeBase } from "../api/token";
 import { InjectionError } from "../errors";
-import type { iContextScanner } from "../plugins/context/types";
 import { Illuma } from "../plugins/core/plugin-container";
 import type { iInjectionNode } from "./node";
 
@@ -107,6 +106,3 @@ export abstract class InjectionContext {
     return calls;
   }
 }
-
-// Checks that default context implementation satisfies the scanner interface
-InjectionContext satisfies iContextScanner;
