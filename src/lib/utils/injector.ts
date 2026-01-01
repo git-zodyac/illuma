@@ -52,7 +52,7 @@ export class InjectorImpl implements iInjector {
  * Injector node that is used to access provider outside of injection context.
  * @example
  * ```typescript
- * import { Injector, nodeInject, NodeInjectable, NodeContainer } from "@lumiere/core";
+ * import { Injector, nodeInject, NodeInjectable, NodeContainer } from "@illuma/core";
  *
  * @NodeInjectable()
  * class MyService {

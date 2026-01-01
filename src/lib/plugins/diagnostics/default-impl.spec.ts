@@ -23,7 +23,7 @@ describe("DiagnosticsDefaultReporter", () => {
 
     reporter.onReport(report);
 
-    expect(consoleLogSpy).toHaveBeenCalledWith("[Lumiere] 🧹 Diagnostics:");
+    expect(consoleLogSpy).toHaveBeenCalledWith("[Illuma] 🧹 Diagnostics:");
     expect(consoleLogSpy).toHaveBeenCalledWith("  Total: 42 node(s)");
   });
 

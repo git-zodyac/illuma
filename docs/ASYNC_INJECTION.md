@@ -38,7 +38,7 @@ This guide covers advanced dependency injection patterns using `injectAsync`, `i
 
 ## Overview
 
-Lumiere provides three utilities for advanced async dependency injection:
+Illuma provides three utilities for advanced async dependency injection:
 
 | Utility | Purpose | Returns |
 |---------|---------|---------|
@@ -61,7 +61,7 @@ All utilities support:
 ### Basic usage
 
 ```typescript
-import { injectAsync, NodeInjectable } from '@lumiere/core';
+import { injectAsync, NodeInjectable } from '@illuma/core';
 
 @NodeInjectable()
 class UserService {
@@ -209,7 +209,7 @@ class MyService {
 ### Basic usage
 
 ```typescript
-import { injectEntryAsync, NodeInjectable } from '@lumiere/core';
+import { injectEntryAsync, NodeInjectable } from '@illuma/core';
 
 @NodeInjectable()
 class Logger {
@@ -274,7 +274,7 @@ const service = await getService();
 ### Basic usage
 
 ```typescript
-import { injectGroupAsync, NodeInjectable, NodeToken } from '@lumiere/core';
+import { injectGroupAsync, NodeInjectable, NodeToken } from '@illuma/core';
 
 const FEATURE_CONFIG = new NodeToken<FeatureConfig>('FEATURE_CONFIG');
 const FEATURE_SERVICE = new NodeToken<FeatureService>('FEATURE_SERVICE');
@@ -565,4 +565,4 @@ class LongLivedService {
 - [Getting Started](./GETTING_STARTED.md) - Basic setup and concepts
 - [Providers Guide](./PROVIDERS.md) - Provider types
 - [API Reference](./API.md) - Complete API documentation
-- [Testing Guide](./TESTKIT.md) - Testing with Lumiere
+- [Testing Guide](./TESTKIT.md) - Testing with Illuma

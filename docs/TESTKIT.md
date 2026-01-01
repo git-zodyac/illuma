@@ -1,6 +1,6 @@
 # 🧪 Testing Guide
 
-The Lumiere testkit provides framework-agnostic utilities for testing components that use dependency injection.
+The Illuma testkit provides framework-agnostic utilities for testing components that use dependency injection.
 
 ## Table of contents
 
@@ -27,10 +27,10 @@ The Lumiere testkit provides framework-agnostic utilities for testing components
 
 ## Installation
 
-The testkit is included with Lumiere. Import from the `/testkit` subpath:
+The testkit is included with Illuma. Import from the `/testkit` subpath:
 
 ```typescript
-import { createTestFactory } from '@lumiere/core/testkit';
+import { createTestFactory } from '@illuma/core/testkit';
 ```
 
 ## Quick start
@@ -38,8 +38,8 @@ import { createTestFactory } from '@lumiere/core/testkit';
 ### Basic service testing
 
 ```typescript
-import { NodeInjectable } from '@lumiere/core';
-import { createTestFactory } from '@lumiere/core/testkit';
+import { NodeInjectable } from '@illuma/core';
+import { createTestFactory } from '@illuma/core/testkit';
 
 @NodeInjectable()
 class UserService {
@@ -62,8 +62,8 @@ describe('UserService', () => {
 ## Testing with dependencies
 
 ```typescript
-import { NodeInjectable, nodeInject } from '@lumiere/core';
-import { createTestFactory } from '@lumiere/core/testkit';
+import { NodeInjectable, nodeInject } from '@illuma/core';
+import { createTestFactory } from '@illuma/core/testkit';
 
 @NodeInjectable()
 class DatabaseService {
@@ -103,8 +103,8 @@ describe('UserRepository', () => {
 Replace real dependencies with mocks or stubs:
 
 ```typescript
-import { NodeInjectable, nodeInject } from '@lumiere/core';
-import { createTestFactory } from '@lumiere/core/testkit';
+import { NodeInjectable, nodeInject } from '@illuma/core';
+import { createTestFactory } from '@illuma/core/testkit';
 
 @NodeInjectable()
 class EmailService {
@@ -158,8 +158,8 @@ describe('NotificationService', () => {
 ## Testing with tokens
 
 ```typescript
-import { NodeToken, NodeInjectable, nodeInject } from '@lumiere/core';
-import { createTestFactory } from '@lumiere/core/testkit';
+import { NodeToken, NodeInjectable, nodeInject } from '@illuma/core';
+import { createTestFactory } from '@illuma/core/testkit';
 
 const API_URL = new NodeToken<string>('API_URL');
 const API_KEY = new NodeToken<string>('API_KEY');
@@ -194,8 +194,8 @@ describe('ApiClient', () => {
 ## Testing Multi-Token dependencies
 
 ```typescript
-import { MultiNodeToken, NodeInjectable, nodeInject } from '@lumiere/core';
-import { createTestFactory } from '@lumiere/core/testkit';
+import { MultiNodeToken, NodeInjectable, nodeInject } from '@illuma/core';
+import { createTestFactory } from '@illuma/core/testkit';
 
 interface Plugin {
   name: string;
@@ -255,8 +255,8 @@ describe('PluginManager', () => {
 Test services with optional dependencies:
 
 ```typescript
-import { NodeToken, NodeInjectable, nodeInject } from '@lumiere/core';
-import { createTestFactory } from '@lumiere/core/testkit';
+import { NodeToken, NodeInjectable, nodeInject } from '@illuma/core';
+import { createTestFactory } from '@illuma/core/testkit';
 
 const LOGGER = new NodeToken<{ log(msg: string): void }>('LOGGER');
 
@@ -302,7 +302,7 @@ While the examples above use Jest, the testkit works with any JavaScript testing
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { createTestFactory } from '@lumiere/core/testkit';
+import { createTestFactory } from '@illuma/core/testkit';
 
 describe('MyService', () => {
   const createTest = createTestFactory({ target: MyService });
@@ -318,7 +318,7 @@ describe('MyService', () => {
 
 ```typescript
 import { expect } from 'chai';
-import { createTestFactory } from '@lumiere/core/testkit';
+import { createTestFactory } from '@illuma/core/testkit';
 
 describe('MyService', () => {
   const createTest = createTestFactory({ target: MyService });
@@ -335,7 +335,7 @@ describe('MyService', () => {
 ```typescript
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { createTestFactory } from '@lumiere/core/testkit';
+import { createTestFactory } from '@illuma/core/testkit';
 
 describe('MyService', () => {
   const createTest = createTestFactory({ target: MyService });

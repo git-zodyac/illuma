@@ -1,6 +1,6 @@
 # ⚠️ Error Reference
 
-This document provides detailed information about all error codes in Lumiere and how to resolve them.
+This document provides detailed information about all error codes in Illuma and how to resolve them.
 
 ## Table of Contents
 
@@ -806,7 +806,7 @@ The container tried to retrieve an instance that wasn't properly instantiated. T
 - The instance was garbage collected prematurely
 
 **Solution:**
-This error usually indicates a bug in Lumiere or a very unusual edge case. Try:
+This error usually indicates a bug in Illuma or a very unusual edge case. Try:
 
 1. **Simplify your setup:**
 ```typescript
@@ -832,7 +832,7 @@ container.provide({
 ```
 
 3. **Report the issue:**
-If the problem persists, please [report it on GitHub](https://github.com/git-lumiere/core/issues) with a minimal reproduction.
+If the problem persists, please [report it on GitHub](https://github.com/git-illuma/core/issues) with a minimal reproduction.
 
 ---
 
@@ -852,7 +852,7 @@ A general instance access failure occurred that doesn't fit into other error cat
 3. Verify that class constructors don't throw errors
 4. Review the full error stack trace for more details
 
-If the issue persists, create a minimal reproduction and [report it on GitHub](https://github.com/git-lumiere/core/issues).
+If the issue persists, create a minimal reproduction and [report it on GitHub](https://github.com/git-illuma/core/issues).
 
 ---
 
@@ -908,7 +908,7 @@ If you encounter an error not covered here:
 1. **Check the error code** in the quick reference table
 2. **Review the detailed section** for your error code
 3. **Create a minimal reproduction** to isolate the issue
-4. **Report issues**: [GitHub Issues](https://github.com/git-lumiere/core/issues)
+4. **Report issues**: [GitHub Issues](https://github.com/git-illuma/core/issues)
 
 ## Related documentation
 

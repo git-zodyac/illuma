@@ -8,7 +8,7 @@ import {
   nodeInject,
 } from "../api";
 import { InjectionError } from "../errors";
-import { Lumiere } from "../plugins";
+import { Illuma } from "../plugins";
 import type { TreeNode } from "../provider";
 import { NodeContainer } from "./container";
 
@@ -1769,7 +1769,7 @@ describe("NodeContainer", () => {
         onReport: jest.fn(),
       };
 
-      Lumiere.extendDiagnostics(mockDiagnosticsModule);
+      Illuma.extendDiagnostics(mockDiagnosticsModule);
 
       const container = new NodeContainer({ diagnostics: true });
       const token = new NodeToken<string>("Token");
@@ -1795,7 +1795,7 @@ describe("NodeContainer", () => {
         onReport: jest.fn(),
       };
 
-      Lumiere.extendDiagnostics(mockDiagnosticsModule);
+      Illuma.extendDiagnostics(mockDiagnosticsModule);
 
       const container = new NodeContainer({ diagnostics: true });
       const usedToken = new NodeToken<string>("Used");
@@ -1836,7 +1836,7 @@ describe("NodeContainer", () => {
       container.bootstrap();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[Lumiere] 🧹 Diagnostics:"),
+        expect.stringContaining("[Illuma] 🧹 Diagnostics:"),
       );
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining("Total:"));
     });
@@ -1911,8 +1911,8 @@ describe("NodeContainer", () => {
         onReport: jest.fn(),
       };
 
-      Lumiere.extendDiagnostics(mockModule1);
-      Lumiere.extendDiagnostics(mockModule2);
+      Illuma.extendDiagnostics(mockModule1);
+      Illuma.extendDiagnostics(mockModule2);
 
       const container = new NodeContainer({ diagnostics: true });
       const token = new NodeToken<string>("Token");
@@ -1940,7 +1940,7 @@ describe("NodeContainer", () => {
         onReport: jest.fn(),
       };
 
-      Lumiere.extendDiagnostics(mockDiagnosticsModule);
+      Illuma.extendDiagnostics(mockDiagnosticsModule);
 
       const container = new NodeContainer({ diagnostics: true });
       const token = new NodeToken<string>("Token");

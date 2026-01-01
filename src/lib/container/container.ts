@@ -11,7 +11,7 @@ import {
 import { isConstructor } from "../api/decorator";
 import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
-import { Lumiere } from "../plugins/core/plugin-container";
+import { Illuma } from "../plugins/core/plugin-container";
 import { DiagnosticsDefaultReporter } from "../plugins/diagnostics/default-impl";
 import type { ProtoNode, TreeNode, UpstreamGetter } from "../provider";
 import {
@@ -38,7 +38,7 @@ export interface iContainerOptions {
   parent?: iDIContainer;
 }
 
-export class NodeContainer extends Lumiere implements iDIContainer {
+export class NodeContainer extends Illuma implements iDIContainer {
   private _bootstrapped = false;
   private _rootNode?: TreeRootNode;
 
@@ -51,7 +51,7 @@ export class NodeContainer extends Lumiere implements iDIContainer {
 
     this._parent = _opts?.parent;
     if (_opts?.diagnostics) {
-      Lumiere.extendDiagnostics(new DiagnosticsDefaultReporter());
+      Illuma.extendDiagnostics(new DiagnosticsDefaultReporter());
     }
   }
 
@@ -261,7 +261,7 @@ export class NodeContainer extends Lumiere implements iDIContainer {
     const end = performance.now();
     const duration = end - start;
     if (this._opts?.measurePerformance) {
-      console.log(`[Lumiere] 🚀 Bootstrapped in ${duration.toFixed(2)} ms`);
+      console.log(`[Illuma] 🚀 Bootstrapped in ${duration.toFixed(2)} ms`);
     }
 
     if (this._opts?.diagnostics) {
@@ -273,7 +273,7 @@ export class NodeContainer extends Lumiere implements iDIContainer {
           return node.proto.token !== Injector;
         });
 
-      Lumiere.onReport({
+      Illuma.onReport({
         totalNodes: allNodes,
         unusedNodes: unusedNodes,
         bootstrapDuration: duration,

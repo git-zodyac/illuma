@@ -1,6 +1,6 @@
 # 🎨 Providers
 
-This guide covers the different ways to register dependencies in your Lumiere container.
+This guide covers the different ways to register dependencies in your Illuma container.
 
 ## Table of contents
 

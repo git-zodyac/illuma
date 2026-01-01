@@ -1,5 +1,5 @@
 describe("Package Entrypoints", () => {
-  describe("Main entrypoint (@lumiere/core)", () => {
+  describe("Main entrypoint (@illuma/core)", () => {
     it("should export core API modules", async () => {
       const mainExports = await import("./index");
 
@@ -21,7 +21,7 @@ describe("Package Entrypoints", () => {
     });
   });
 
-  describe("Testkit entrypoint (@lumiere/core/testkit)", () => {
+  describe("Testkit entrypoint (@illuma/core/testkit)", () => {
     it("should export testkit utilities", async () => {
       const testkitExports = await import("./testkit");
 
@@ -30,11 +30,11 @@ describe("Package Entrypoints", () => {
     });
   });
 
-  describe("Plugins entrypoint (@lumiere/core/plugins)", () => {
+  describe("Plugins entrypoint (@illuma/core/plugins)", () => {
     it("should export plugin modules", async () => {
       const pluginsExports = await import("./plugins");
 
-      expect(pluginsExports.Lumiere).toBeDefined();
+      expect(pluginsExports.Illuma).toBeDefined();
       expect(pluginsExports.DiagnosticsDefaultReporter).toBeDefined();
     });
   });

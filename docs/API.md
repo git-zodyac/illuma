@@ -1,6 +1,6 @@
 # 📚 API Reference
 
-Complete API documentation for Lumiere's core classes, functions, and decorators.
+Complete API documentation for Illuma's core classes, functions, and decorators.
 
 ## Table of Contents
 
@@ -274,7 +274,7 @@ class UserService {
 Alternative to `@NodeInjectable()` without decorators.
 
 ```typescript
-import { makeInjectable } from '@lumiere/core';
+import { makeInjectable } from '@illuma/core';
 
 class _UserService {
   public getUser() { return { id: 1 }; }
@@ -475,5 +475,5 @@ interface iInjector {
 - [Providers Guide](./PROVIDERS.md) - Provider types in detail
 - [Tokens Guide](./TOKENS.md) - Using NodeToken and MultiNodeToken
 - [Async Injection Guide](./ASYNC_INJECTION.md) - Advanced async patterns
-- [Testing Guide](./TESTKIT.md) - Testing with Lumiere
+- [Testing Guide](./TESTKIT.md) - Testing with Illuma
 - [Error Reference](./TROUBLESHOOTING.md) - Troubleshooting

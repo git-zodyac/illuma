@@ -1,20 +1,20 @@
 import type { iContextScanner } from "../context/types";
 import type { iDiagnosticsModule, iDiagnosticsReport } from "../diagnostics/types";
-import { Lumiere } from "./plugin-container";
+import { Illuma } from "./plugin-container";
 
 // Test subclass to expose protected methods
-class TestPluginContainer extends Lumiere {
+class TestPluginContainer extends Illuma {
   public static triggerReport(report: iDiagnosticsReport): void {
-    Lumiere.onReport(report);
+    Illuma.onReport(report);
   }
 
   public static resetPlugins(): void {
-    (Lumiere as any)._diagnostics.length = 0;
-    (Lumiere as any)._scanners.length = 0;
+    (Illuma as any)._diagnostics.length = 0;
+    (Illuma as any)._scanners.length = 0;
   }
 }
 
-describe("Lumiere", () => {
+describe("Illuma", () => {
   beforeEach(() => {
     TestPluginContainer.resetPlugins();
   });
@@ -29,7 +29,7 @@ describe("Lumiere", () => {
         onReport: jest.fn(),
       };
 
-      Lumiere.extendDiagnostics(mockModule);
+      Illuma.extendDiagnostics(mockModule);
 
       const report: iDiagnosticsReport = {
         totalNodes: 10,
@@ -51,8 +51,8 @@ describe("Lumiere", () => {
         onReport: jest.fn(() => callOrder.push(2)),
       };
 
-      Lumiere.extendDiagnostics(mockModule1);
-      Lumiere.extendDiagnostics(mockModule2);
+      Illuma.extendDiagnostics(mockModule1);
+      Illuma.extendDiagnostics(mockModule2);
 
       TestPluginContainer.triggerReport({
         totalNodes: 0,
@@ -70,9 +70,9 @@ describe("Lumiere", () => {
         scan: jest.fn(() => new Set()),
       };
 
-      Lumiere.extendContextScanner(mockScanner);
+      Illuma.extendContextScanner(mockScanner);
 
-      const scanners = Lumiere.contextScanners;
+      const scanners = Illuma.contextScanners;
       expect(scanners).toHaveLength(1);
       expect(scanners[0]).toBe(mockScanner);
     });
@@ -81,17 +81,17 @@ describe("Lumiere", () => {
       const mockScanner1: iContextScanner = { scan: jest.fn(() => new Set()) };
       const mockScanner2: iContextScanner = { scan: jest.fn(() => new Set()) };
 
-      Lumiere.extendContextScanner(mockScanner1);
-      Lumiere.extendContextScanner(mockScanner2);
+      Illuma.extendContextScanner(mockScanner1);
+      Illuma.extendContextScanner(mockScanner2);
 
-      const scanners = Lumiere.contextScanners;
+      const scanners = Illuma.contextScanners;
       expect(scanners).toEqual([mockScanner1, mockScanner2]);
     });
   });
 
   describe("contextScanners", () => {
     it("should return readonly array", () => {
-      const scanners = Lumiere.contextScanners;
+      const scanners = Illuma.contextScanners;
       expect(Array.isArray(scanners)).toBe(true);
     });
   });

@@ -47,7 +47,7 @@ export function NodeInjectable<T>() {
  *
  * @example
  * ```typescript
- * import { makeInjectable } from '@lumiere/core';
+ * import { makeInjectable } from '@illuma/core';
  *
  * class _UserService {
  *   public getUser() {

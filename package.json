@@ -1,10 +1,10 @@
 {
-  "name": "@lumiere/core",
+  "name": "@illuma/core",
   "description": "A lightweight, type-safe dependency injection container for anything, inspired by Angular's DI system",
   "author": "bebrasmell",
   "repository": {
     "type": "git",
-    "url": "https://github.com/git-lumiere/core"
+    "url": "https://github.com/git-illuma/core"
   },
   "version": "2.0.0",
   "type": "module",
