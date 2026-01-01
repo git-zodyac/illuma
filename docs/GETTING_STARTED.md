@@ -1,6 +1,6 @@
 # 🚀 Getting Started
 
-This guide will walk you through setting up Illuma and creating your first dependency injection container.
+This guide will walk you through setting up Lumiere and creating your first dependency injection container.
 
 ## Table of contents
 
@@ -18,16 +18,16 @@ This guide will walk you through setting up Illuma and creating your first depen
 
 ## Installation
 
-Install Illuma using your preferred package manager:
+Install Lumiere using your preferred package manager:
 
 ```bash
-npm install @zodyac/illuma
+npm install @lumiere/core
 # or
-pnpm add @zodyac/illuma
+pnpm add @lumiere/core
 # or
-yarn add @zodyac/illuma
+yarn add @lumiere/core
 # or
-bun add @zodyac/illuma
+bun add @lumiere/core
 ```
 
 ## TypeScript configuration (for decorators if using)
@@ -48,7 +48,7 @@ To use decorators like `@NodeInjectable()`, enable experimental decorators in yo
 If you prefer not to use decorators, use `makeInjectable` to mark classes as injectable:
 
 ```typescript
-import { makeInjectable } from '@zodyac/illuma';
+import { makeInjectable } from '@lumiere/core';
 
 class _UserService {
   public getUser() {
@@ -62,7 +62,7 @@ export const UserService = makeInjectable(_UserService);
 
 ## Basic setup
 
-Illuma uses three core concepts:
+Lumiere uses three core concepts:
 
 1. **Container** - Manages all your dependencies
 2. **Providers** - Register services and values
@@ -71,7 +71,7 @@ Illuma uses three core concepts:
 ## Your first container
 
 ```typescript
-import { NodeContainer, NodeInjectable, nodeInject } from '@zodyac/illuma';
+import { NodeContainer, NodeInjectable, nodeInject } from '@lumiere/core';
 
 // 1. Define injectable services
 @NodeInjectable()
@@ -155,7 +155,7 @@ class MyService {
 Tokens let you inject values that aren't classes, like configuration objects:
 
 ```typescript
-import { NodeToken, NodeContainer } from '@zodyac/illuma';
+import { NodeToken, NodeContainer } from '@lumiere/core';
 
 // Define a token
 interface Config {
@@ -195,6 +195,6 @@ Now that you understand the basics, explore these topics:
 - **[Providers Guide](./PROVIDERS.md)** - Learn about different provider types (value, factory, class, alias)
 - **[Tokens Guide](./TOKENS.md)** - Deep dive into NodeToken and MultiNodeToken
 - **[Async Injection Guide](./ASYNC_INJECTION.md)** - Lazy loading and sub-containers
-- **[Testing Guide](./TESTKIT.md)** - Testing with the Illuma testkit
+- **[Testing Guide](./TESTKIT.md)** - Testing with the Lumiere testkit
 - **[API Reference](./API.md)** - Complete API documentation
 - **[Error Reference](./TROUBLESHOOTING.md)** - Troubleshooting common issues

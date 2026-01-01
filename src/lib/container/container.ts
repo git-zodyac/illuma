@@ -11,7 +11,7 @@ import {
 import { isConstructor } from "../api/decorator";
 import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
-import { Illuma } from "../plugins/core/plugin-container";
+import { Lumiere } from "../plugins/core/plugin-container";
 import { DiagnosticsDefaultReporter } from "../plugins/diagnostics/default-impl";
 import type { ProtoNode, TreeNode, UpstreamGetter } from "../provider";
 import {
@@ -21,14 +21,7 @@ import {
   resolveTreeNode,
   TreeRootNode,
 } from "../provider";
-import type {
-  Ctor,
-  iDIContainer,
-  iNodeProvider,
-  iNodeProviderSet,
-  Provider,
-  Token,
-} from "../types";
+import type { Ctor, iDIContainer, iNodeProvider, Provider, Token } from "../types";
 import { Injector, InjectorImpl } from "../utils";
 
 /**
@@ -45,7 +38,7 @@ export interface iContainerOptions {
   parent?: iDIContainer;
 }
 
-export class NodeContainer extends Illuma implements iDIContainer {
+export class NodeContainer extends Lumiere implements iDIContainer {
   private _bootstrapped = false;
   private _rootNode?: TreeRootNode;
 
@@ -58,7 +51,7 @@ export class NodeContainer extends Illuma implements iDIContainer {
 
     this._parent = _opts?.parent;
     if (_opts?.diagnostics) {
-      Illuma.extendDiagnostics(new DiagnosticsDefaultReporter());
+      Lumiere.extendDiagnostics(new DiagnosticsDefaultReporter());
     }
   }
 
@@ -180,29 +173,6 @@ export class NodeContainer extends Illuma implements iDIContainer {
     throw InjectionError.invalidProvider(JSON.stringify(provider));
   }
 
-  /**
-   * @deprecated Will be removed after version 2.0. Use {@link provide} instead.
-   *
-   *
-   * Includes a provider set (group of providers) into the container.
-   * This is useful for organizing related providers together.
-   *
-   * @param group - A provider set created with {@link createProviderSet}
-   *
-   * @example
-   * ```typescript
-   * const databaseProviders = createProviderSet(
-   *   { provide: DbToken, useClass: PostgresDb },
-   *   { provide: CacheToken, useClass: RedisCache }
-   * );
-   *
-   * container.include(databaseProviders);
-   * ```
-   */
-  public include(group: iNodeProviderSet): void {
-    group(this);
-  }
-
   public findNode<T>(token: Token<T>): TreeNode<T> | null {
     if (!this._rootNode) return null;
     if (!this._bootstrapped) return null;
@@ -291,7 +261,7 @@ export class NodeContainer extends Illuma implements iDIContainer {
     const end = performance.now();
     const duration = end - start;
     if (this._opts?.measurePerformance) {
-      console.log(`[Illuma] 🚀 Bootstrapped in ${duration.toFixed(2)} ms`);
+      console.log(`[Lumiere] 🚀 Bootstrapped in ${duration.toFixed(2)} ms`);
     }
 
     if (this._opts?.diagnostics) {
@@ -303,7 +273,7 @@ export class NodeContainer extends Illuma implements iDIContainer {
           return node.proto.token !== Injector;
         });
 
-      Illuma.onReport({
+      Lumiere.onReport({
         totalNodes: allNodes,
         unusedNodes: unusedNodes,
         bootstrapDuration: duration,

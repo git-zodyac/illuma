@@ -1,5 +1,4 @@
 import {
-  createProviderSet,
   extractToken,
   INJECTION_SYMBOL,
   MultiNodeToken,
@@ -9,7 +8,7 @@ import {
   nodeInject,
 } from "../api";
 import { InjectionError } from "../errors";
-import { Illuma } from "../plugins";
+import { Lumiere } from "../plugins";
 import type { TreeNode } from "../provider";
 import { NodeContainer } from "./container";
 
@@ -702,25 +701,6 @@ describe("NodeContainer", () => {
     });
   });
 
-  describe("[BC] provider sets", () => {
-    it("should include provider sets", () => {
-      const container = new NodeContainer();
-      const tokenA = new NodeToken<string>("TOKEN_A");
-      const tokenB = new NodeToken<string>("TOKEN_B");
-
-      const providerSet = createProviderSet(
-        { provide: tokenA, value: "value-a" },
-        { provide: tokenB, value: "value-b" },
-      );
-
-      container.include(providerSet);
-      container.bootstrap();
-
-      expect(container.get(tokenA)).toBe("value-a");
-      expect(container.get(tokenB)).toBe("value-b");
-    });
-  });
-
   describe("array providers", () => {
     it("should provide an array of providers", () => {
       const container = new NodeContainer();
@@ -937,21 +917,6 @@ describe("NodeContainer", () => {
       container.bootstrap();
       expect(container.get(tokenA)).toBe("value-a");
       expect(container.get(tokenB)).toBe("value-b");
-    });
-
-    it("should combine array providers with include", () => {
-      const container = new NodeContainer();
-      const tokenA = new NodeToken<string>("TOKEN_A");
-      const tokenB = new NodeToken<string>("TOKEN_B");
-
-      const providerSet = createProviderSet({ provide: tokenA, value: "from-set" });
-
-      container.include(providerSet);
-      container.provide([{ provide: tokenB, value: "from-array" }]);
-
-      container.bootstrap();
-      expect(container.get(tokenA)).toBe("from-set");
-      expect(container.get(tokenB)).toBe("from-array");
     });
   });
 
@@ -1804,7 +1769,7 @@ describe("NodeContainer", () => {
         onReport: jest.fn(),
       };
 
-      Illuma.extendDiagnostics(mockDiagnosticsModule);
+      Lumiere.extendDiagnostics(mockDiagnosticsModule);
 
       const container = new NodeContainer({ diagnostics: true });
       const token = new NodeToken<string>("Token");
@@ -1830,7 +1795,7 @@ describe("NodeContainer", () => {
         onReport: jest.fn(),
       };
 
-      Illuma.extendDiagnostics(mockDiagnosticsModule);
+      Lumiere.extendDiagnostics(mockDiagnosticsModule);
 
       const container = new NodeContainer({ diagnostics: true });
       const usedToken = new NodeToken<string>("Used");
@@ -1871,7 +1836,7 @@ describe("NodeContainer", () => {
       container.bootstrap();
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[Illuma] 🧹 Diagnostics:"),
+        expect.stringContaining("[Lumiere] 🧹 Diagnostics:"),
       );
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining("Total:"));
     });
@@ -1946,8 +1911,8 @@ describe("NodeContainer", () => {
         onReport: jest.fn(),
       };
 
-      Illuma.extendDiagnostics(mockModule1);
-      Illuma.extendDiagnostics(mockModule2);
+      Lumiere.extendDiagnostics(mockModule1);
+      Lumiere.extendDiagnostics(mockModule2);
 
       const container = new NodeContainer({ diagnostics: true });
       const token = new NodeToken<string>("Token");
@@ -1975,7 +1940,7 @@ describe("NodeContainer", () => {
         onReport: jest.fn(),
       };
 
-      Illuma.extendDiagnostics(mockDiagnosticsModule);
+      Lumiere.extendDiagnostics(mockDiagnosticsModule);
 
       const container = new NodeContainer({ diagnostics: true });
       const token = new NodeToken<string>("Token");

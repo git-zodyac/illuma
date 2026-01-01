@@ -1,6 +1,6 @@
 import type { NodeBase } from "../api/token";
 import { InjectionError } from "../errors";
-import { Illuma } from "../plugins/core/plugin-container";
+import { Lumiere } from "../plugins/core/plugin-container";
 import type { iInjectionNode } from "./node";
 
 /** @internal */
@@ -16,7 +16,7 @@ export abstract class InjectionContext {
   public static contextOpen = false;
   public static readonly _calls = new Set<iInjectionNode<any>>();
   public static injector: InjectorFn | null = null;
-  private static readonly _scanners = Illuma.contextScanners;
+  private static readonly _scanners = Lumiere.contextScanners;
 
   /**
    * Adds a dependency to the current injection context.

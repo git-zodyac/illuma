@@ -1,6 +1,6 @@
 # 🔌 Plugin System
 
-Illuma provides a plugin system that allows you to extend its core functionality. The plugin system supports two types of plugins:
+Lumiere provides a plugin system that allows you to extend its core functionality. The plugin system supports two types of plugins:
 
 1. **Context Scanners** – Extend injection detection to support custom patterns
 2. **Diagnostics Modules** – Analyze and report on container state after bootstrap
@@ -27,23 +27,23 @@ Illuma provides a plugin system that allows you to extend its core functionality
     - [Conditional Diagnostics Reporter](#conditional-diagnostics-reporter)
   - [Plugin Lifecycle](#plugin-lifecycle)
   - [Existing Plugins](#existing-plugins)
-    - [Illuma-reflect - Injections via constructor metadata and property decorators](#illuma-reflect---injections-via-constructor-metadata-and-property-decorators)
+    - [@lumiere/reflect - Injections via constructor metadata and property decorators](#lumierereflect---injections-via-constructor-metadata-and-property-decorators)
   - [Next Steps](#next-steps)
 
 ---
 
 ## Overview
 
-The `Illuma` class is the central hub for managing plugins in Illuma. It provides static methods to register plugins globally, which will then be automatically invoked at the appropriate times during the container lifecycle.
+The `Lumiere` class is the central hub for managing plugins in Lumiere. It provides static methods to register plugins globally, which will then be automatically invoked at the appropriate times during the container lifecycle.
 
 ```typescript
-import { Illuma } from '@zodyac/illuma';
+import { Lumiere } from '@lumiere/core';
 
 // Register a context scanner
-Illuma.extendContextScanner(myScanner);
+Lumiere.extendContextScanner(myScanner);
 
 // Register a diagnostics module
-Illuma.extendDiagnostics(myDiagnostics);
+Lumiere.extendDiagnostics(myDiagnostics);
 ```
 
 **Key characteristics:**
@@ -60,7 +60,7 @@ Illuma.extendDiagnostics(myDiagnostics);
 
 ### What are Context Scanners?
 
-Context scanners are plugins that extend Illuma's ability to detect dependency injections. By default, Illuma detects dependencies through `nodeInject()` calls. Context scanners allow you to add support for:
+Context scanners are plugins that extend Lumiere's ability to detect dependency injections. By default, Lumiere detects dependencies through `nodeInject()` calls. Context scanners allow you to add support for:
 
 - Custom decorators (e.g., `@CustomInject()`)
 - Metadata-based injection patterns
@@ -73,7 +73,7 @@ Context scanners are plugins that extend Illuma's ability to detect dependency i
 A context scanner must implement the `iContextScanner` interface:
 
 ```typescript
-import type { iInjectionNode } from '@zodyac/illuma';
+import type { iInjectionNode } from '@lumiere/core';
 
 interface iContextScanner {
   /**
@@ -115,7 +115,7 @@ Diagnostics modules analyze the container state after bootstrap and provide insi
 A diagnostics module must implement the `iDiagnosticsModule` interface:
 
 ```typescript
-import type { TreeNode } from '@zodyac/illuma';
+import type { TreeNode } from '@lumiere/core';
 
 interface iDiagnosticsReport {
   readonly totalNodes: number;        // Total dependency nodes in container
@@ -138,7 +138,7 @@ interface iDiagnosticsModule {
 #### Example: Custom Performance Reporter
 
 ```typescript
-import type { iDiagnosticsModule, iDiagnosticsReport } from '@zodyac/illuma';
+import type { iDiagnosticsModule, iDiagnosticsReport } from '@lumiere/core';
 
 export class PerformanceReporter implements iDiagnosticsModule {
   public onReport(report: iDiagnosticsReport): void {
@@ -164,7 +164,7 @@ export class PerformanceReporter implements iDiagnosticsModule {
 Throw an error if any dependencies are unused (strict mode):
 
 ```typescript
-import type { iDiagnosticsModule, iDiagnosticsReport } from '@zodyac/illuma';
+import type { iDiagnosticsModule, iDiagnosticsReport } from '@lumiere/core';
 
 export class StrictUnusedValidator implements iDiagnosticsModule {
   public onReport(report: iDiagnosticsReport): void {
@@ -186,7 +186,7 @@ export class StrictUnusedValidator implements iDiagnosticsModule {
 Send diagnostics to a logging service:
 
 ```typescript
-import type { iDiagnosticsModule, iDiagnosticsReport } from '@zodyac/illuma';
+import type { iDiagnosticsModule, iDiagnosticsReport } from '@lumiere/core';
 
 export class JsonDiagnosticsLogger implements iDiagnosticsModule {
   constructor(private readonly loggerService: LoggerService) {}
@@ -224,11 +224,11 @@ export class JsonDiagnosticsLogger implements iDiagnosticsModule {
 Diagnostics modules should be registered before bootstrapping the container:
 
 ```typescript
-import { Illuma, NodeContainer } from '@zodyac/illuma';
+import { Lumiere, NodeContainer } from '@lumiere/core';
 import { PerformanceReporter } from './diagnostics';
 
 // 1. Register diagnostics module
-Illuma.extendDiagnostics(new PerformanceReporter());
+Lumiere.extendDiagnostics(new PerformanceReporter());
 
 // 2. Create and configure container
 const container = new NodeContainer({ measurePerformance: true });
@@ -292,7 +292,7 @@ export class OptimizedScanner implements iContextScanner {
 Support property-based injection using decorators:
 
 ```typescript
-import type { iContextScanner, NodeToken, iInjectionNode } from '@zodyac/illuma';
+import type { iContextScanner, NodeToken, iInjectionNode } from '@lumiere/core';
 
 const PROPERTY_INJECT_KEY = Symbol('di:properties');
 
@@ -331,7 +331,7 @@ export class PropertyInjectionScanner implements iContextScanner {
 Register the scanner:
 
 ```typescript
-Illuma.extendContextScanner(new PropertyInjectionScanner());
+Lumiere.extendContextScanner(new PropertyInjectionScanner());
 ```
 
 Now properties decorated with `@InjectProperty()` will be detected, but not injected automatically. You will need to implement property injection logic yourself.
@@ -341,7 +341,7 @@ Now properties decorated with `@InjectProperty()` will be detected, but not inje
 Only report diagnostics in development mode:
 
 ```typescript
-import type { iDiagnosticsModule, iDiagnosticsReport } from '@zodyac/illuma';
+import type { iDiagnosticsModule, iDiagnosticsReport } from '@lumiere/core';
 
 export class ConditionalReporter implements iDiagnosticsModule {
   constructor(
@@ -373,7 +373,7 @@ export class ConditionalReporter implements iDiagnosticsModule {
 }
 
 // Usage
-Illuma.extendDiagnostics(
+Lumiere.extendDiagnostics(
   new ConditionalReporter(process.env.NODE_ENV === 'development')
 );
 ```
@@ -386,7 +386,7 @@ Understanding when plugins execute is crucial for proper usage:
 
 ```typescript
 // 1. Register plugins (before container creation)
-Illuma.extendContextScanner(myScanner);
+Lumiere.extendContextScanner(myScanner);
 
 // 2. Create container
 const container = new NodeContainer({ measurePerformance: true });
@@ -413,9 +413,9 @@ container.bootstrap();
 
 ## Existing Plugins
 
-### Illuma-reflect - Injections via constructor metadata and property decorators
-- GitHub: [git-zodyac/illuma-reflect](https://github.com/git-zodyac/illuma-reflect)
-- NPM: [@zodyac/illuma-reflect](https://www.npmjs.com/package/@zodyac/illuma-reflect)
+### @lumiere/reflect - Injections via constructor metadata and property decorators
+- GitHub: [git-lumiere/reflect](https://github.com/git-lumiere/reflect)
+- NPM: [@lumiere/reflect](https://www.npmjs.com/package/@lumiere/reflect)
 
 ## Next Steps
 
@@ -424,4 +424,4 @@ container.bootstrap();
 - Check out [Providers](./PROVIDERS.md) to understand provider types
 - Read [Troubleshooting](./TROUBLESHOOTING.md) for common issues
 
-For questions or issues with plugins, please [open an issue](https://github.com/zodyac/illuma/issues) on GitHub.
+For questions or issues with plugins, please [open an issue](https://github.com/git-lumiere/core/issues) on GitHub.

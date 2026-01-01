@@ -1,10 +1,4 @@
-import {
-  createProviderSet,
-  MultiNodeToken,
-  NodeInjectable,
-  NodeToken,
-  nodeInject,
-} from "../api";
+import { MultiNodeToken, NodeInjectable, NodeToken, nodeInject } from "../api";
 import { InjectionError } from "../errors";
 import { createTestFactory } from "./helpers";
 
@@ -43,7 +37,7 @@ describe("Testkit Helpers", () => {
 
     const createProvider = createTestFactory({
       target: MainService,
-      providers: createProviderSet(DependentService),
+      provide: [DependentService],
     });
 
     const spectator = createProvider();
@@ -76,10 +70,7 @@ describe("Testkit Helpers", () => {
 
     const createProvider = createTestFactory({
       target: Service,
-      providers: createProviderSet({
-        provide: depToken,
-        value: { message: "static-value" },
-      }),
+      provide: [depToken.withValue({ message: "static-value" })],
     });
 
     const spectator = createProvider();
@@ -106,10 +97,7 @@ describe("Testkit Helpers", () => {
 
     const createProvider = createTestFactory({
       target: Consumer,
-      providers: createProviderSet(
-        { provide: multiToken, alias: ServiceA },
-        { provide: multiToken, alias: ServiceB },
-      ),
+      provide: [multiToken.withAlias(ServiceA), multiToken.withAlias(ServiceB)],
     });
 
     const spectator = createProvider();
@@ -130,7 +118,7 @@ describe("Testkit Helpers", () => {
 
     const createProvider = createTestFactory({
       target: Service,
-      providers: createProviderSet({ provide: presentToken, value: "present" }),
+      provide: [presentToken.withValue("present")],
     });
 
     const spectator = createProvider();
@@ -164,10 +152,12 @@ describe("Testkit Helpers", () => {
 
     const createProvider = createTestFactory({
       target: Consumer,
-      providers: createProviderSet({
-        provide: DependencyService,
-        useClass: MockDependency,
-      }),
+      provide: [
+        {
+          provide: DependencyService,
+          useClass: MockDependency,
+        },
+      ],
     });
 
     const spectator = createProvider();
@@ -292,27 +282,6 @@ describe("Testkit Helpers", () => {
       expect(spectator.instance.plugins.map((p) => p.name)).toEqual(
         expect.arrayContaining(["plugin-a", "plugin-b"]),
       );
-    });
-
-    it("should allow combining provide array with deprecated providers", () => {
-      const tokenA = new NodeToken<string>("TOKEN_A");
-      const tokenB = new NodeToken<string>("TOKEN_B");
-
-      @NodeInjectable()
-      class Service {
-        public readonly a = nodeInject(tokenA);
-        public readonly b = nodeInject(tokenB);
-      }
-
-      const createProvider = createTestFactory({
-        target: Service,
-        providers: createProviderSet({ provide: tokenA, value: "from-provider-set" }),
-        provide: [{ provide: tokenB, value: "from-provide-array" }],
-      });
-
-      const spectator = createProvider();
-      expect(spectator.instance.a).toBe("from-provider-set");
-      expect(spectator.instance.b).toBe("from-provide-array");
     });
 
     it("should support factory providers in arrays", () => {

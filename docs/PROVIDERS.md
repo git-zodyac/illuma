@@ -1,6 +1,6 @@
 # 🎨 Providers
 
-This guide covers the different ways to register dependencies in your Illuma container.
+This guide covers the different ways to register dependencies in your Lumiere container.
 
 ## Table of contents
 
@@ -17,7 +17,6 @@ This guide covers the different ways to register dependencies in your Illuma con
     - [Single provider](#single-provider)
     - [Array providers](#array-providers)
     - [Nested arrays](#nested-arrays)
-  - [Provider sets (Deprecated)](#provider-sets-deprecated)
   - [Best practices](#best-practices)
     - [1. Group related providers](#1-group-related-providers)
     - [2. Use token helpers](#2-use-token-helpers)
@@ -246,28 +245,6 @@ container.provide([
   coreProviders,
   databaseProviders,
   serviceProviders
-]);
-```
-
-## Provider sets (Deprecated)
-
-> **Note:** `createProviderSet` and `container.include()` are deprecated. Use array providers instead.
-
-```typescript
-// ❌ Deprecated
-import { createProviderSet } from '@zodyac/illuma';
-
-const providers = createProviderSet(
-  UserService,
-  DatabaseService
-);
-
-container.include(providers);
-
-// ✅ Recommended
-container.provide([
-  UserService,
-  DatabaseService
 ]);
 ```
 

@@ -1,7 +1,6 @@
 {
     "cSpell.words": [
-        "Illuma",
-        "zodyac"
+        "Lumiere",
     ],
     "typescript.tsdk": "node_modules/typescript/lib",
     "markdown.validate.enabled": true

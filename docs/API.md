@@ -1,6 +1,6 @@
 # 📚 API Reference
 
-Complete API documentation for Illuma's core classes, functions, and decorators.
+Complete API documentation for Lumiere's core classes, functions, and decorators.
 
 ## Table of Contents
 
@@ -52,12 +52,6 @@ container.provide([
   { provide: CONFIG, value: config }
 ]);
 ```
-
-#### `include(providerSet: iNodeProviderSet): void`
-
-> **Deprecated:** Use `provide()` with an array of providers instead.
-
-Include a provider set in the container.
 
 #### `bootstrap(): void`
 
@@ -280,7 +274,7 @@ class UserService {
 Alternative to `@NodeInjectable()` without decorators.
 
 ```typescript
-import { makeInjectable } from '@zodyac/illuma';
+import { makeInjectable } from '@lumiere/core';
 
 class _UserService {
   public getUser() { return { id: 1 }; }
@@ -406,20 +400,6 @@ class AppService {
 }
 ```
 
-### injectChildrenAsync
-
-> **Deprecated:** Use `injectGroupAsync()` instead.
-
-```typescript
-function injectChildrenAsync(
-  fn: () => iNodeProviderSet | Promise<iNodeProviderSet>,
-  options?: {
-    withCache?: boolean;
-    overrides?: Provider[];
-  }
-): () => Promise<iInjector>
-```
-
 ---
 
 ## Type definitions
@@ -438,22 +418,6 @@ Constructor type.
 
 ```typescript
 type Ctor<T> = new (...args: any[]) => T;
-```
-
-### Providable<T>
-
-** Deprecated** – will be removed after version 2.0.
-
-Valid provider configuration.
-
-```typescript
-type Providable<T> =
-  | Ctor<T>
-  | iNodeValueProvider<T>
-  | iNodeFactoryProvider<T>
-  | iNodeClassProvider<T>
-  | iNodeAliasProvider<T>
-  | Providable<T>[];
 ```
 
 ### Provider
@@ -511,5 +475,5 @@ interface iInjector {
 - [Providers Guide](./PROVIDERS.md) - Provider types in detail
 - [Tokens Guide](./TOKENS.md) - Using NodeToken and MultiNodeToken
 - [Async Injection Guide](./ASYNC_INJECTION.md) - Advanced async patterns
-- [Testing Guide](./TESTKIT.md) - Testing with Illuma
+- [Testing Guide](./TESTKIT.md) - Testing with Lumiere
 - [Error Reference](./TROUBLESHOOTING.md) - Troubleshooting

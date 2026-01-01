@@ -1,15 +1,11 @@
-# 🔥 Illuma – Angular-style Dependency Injection for TypeScript
+# 🔥  – Angular-style Dependency Injection for TypeScript
 
-![NPM Version](https://img.shields.io/npm/v/%40zodyac%2Filluma)
-![NPM Downloads](https://img.shields.io/npm/dw/%40zodyac%2Filluma)
-![npm bundle size](https://img.shields.io/bundlephobia/min/%40zodyac%2Filluma)
+![NPM Version](https://img.shields.io/npm/v/%40lumiere%2Fcore)
+![NPM Downloads](https://img.shields.io/npm/dw/%40lumiere%2Fcore)
+![npm bundle size](https://img.shields.io/bundlephobia/min/%40lumiere%2Fcore)
 ![Test coverage](./badges/coverage.svg)
 
 A lightweight, type-safe dependency injection container for TypeScript. Zero dependencies.
-
-> [!NOTE]
-> This package is in early development. Expect API changes in minor versions.
-> Planned stable release: v2.0.0
 
 ## ✨ Features
 
@@ -24,13 +20,13 @@ A lightweight, type-safe dependency injection container for TypeScript. Zero dep
 ## 📦 Installation
 
 ```bash
-npm install @zodyac/illuma
+npm install @lumiere/core
 ```
 
 ## 🚀 Quick Start
 
 ```typescript
-import { NodeContainer, NodeInjectable, nodeInject } from '@zodyac/illuma';
+import { NodeContainer, NodeInjectable, nodeInject } from '@lumiere/core';
 
 @NodeInjectable()
 class Logger {
@@ -61,7 +57,7 @@ const userService = container.get(UserService);
 ## 🏷️ Using Tokens
 
 ```typescript
-import { NodeToken, MultiNodeToken, NodeContainer } from '@zodyac/illuma';
+import { NodeToken, MultiNodeToken, NodeContainer } from '@lumiere/core';
 
 // Single-value token
 const CONFIG = new NodeToken<{ apiUrl: string }>('CONFIG');
@@ -120,7 +116,7 @@ See [Providers Guide](./docs/PROVIDERS.md) for details.
 ## 🧪 Testing
 
 ```typescript
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 const createTest = createTestFactory({
   target: UserService,
@@ -137,32 +133,32 @@ See [Testing Guide](./docs/TESTKIT.md) for comprehensive examples.
 
 ## 📚 Documentation
 
-| Guide | Description |
-|-------|-------------|
-| [Getting Started](./docs/GETTING_STARTED.md) | Installation, setup, and basic usage |
-| [Providers](./docs/PROVIDERS.md) | Value, factory, class, and alias providers |
-| [Tokens](./docs/TOKENS.md) | NodeToken and MultiNodeToken |
-| [Async Injection](./docs/ASYNC_INJECTION.md) | Lazy loading and sub-containers |
-| [Testing](./docs/TESTKIT.md) | Testkit and mocking |
-| [Plugins](./docs/PLUGINS.md) | Extending Illuma with custom scanners and diagnostics |
-| [Technical Overview](./docs/TECHNICAL_OVERVIEW.md) | Deep dive into how Illuma works |
-| [API Reference](./docs/API.md) | Complete API documentation |
-| [Troubleshooting](./docs/TROUBLESHOOTING.md) | Error codes and solutions |
+| Guide                                              | Description                                           |
+| -------------------------------------------------- | ----------------------------------------------------- |
+| [Getting Started](./docs/GETTING_STARTED.md)       | Installation, setup, and basic usage                  |
+| [Providers](./docs/PROVIDERS.md)                   | Value, factory, class, and alias providers            |
+| [Tokens](./docs/TOKENS.md)                         | NodeToken and MultiNodeToken                          |
+| [Async Injection](./docs/ASYNC_INJECTION.md)       | Lazy loading and sub-containers                       |
+| [Testing](./docs/TESTKIT.md)                       | Testkit and mocking                                   |
+| [Plugins](./docs/PLUGINS.md)                       | Extending Lumiere with custom scanners and diagnostics |
+| [Technical Overview](./docs/TECHNICAL_OVERVIEW.md) | Deep dive into how Lumiere works                       |
+| [API Reference](./docs/API.md)                     | Complete API documentation                            |
+| [Troubleshooting](./docs/TROUBLESHOOTING.md)       | Error codes and solutions                             |
 
 ## 🔌 Plugins
 
-Illuma supports a plugin system for extending functionality. Check out these plugins:
+Lumiere supports a plugin system for extending functionality. Check out these plugins:
 
-- **[illuma-reflect](https://github.com/git-zodyac/illuma-reflect)** – Constructor metadata and property decorator injection support
+- **[@lumiere/reflect](https://github.com/git-lumiere/reflect)** – Constructor metadata and property decorator injection support
 
 See [Plugins Guide](./docs/PLUGINS.md) for creating your own plugins.
 
 ## 📄 License
 
-MIT © [bebrasmell](https://github.com/git-zodyac)
+MIT © [bebrasmell](https://github.com/bebrasmell)
 
 ## 🔗 Links
 
-- [GitHub](https://github.com/git-zodyac/illuma)
-- [NPM](https://www.npmjs.com/package/@zodyac/illuma)
-- [Issues](https://github.com/git-zodyac/illuma/issues)
+- [GitHub](https://github.com/git-lumiere/core)
+- [NPM](https://www.npmjs.com/package/@lumiere/core)
+- [Issues](https://github.com/git-lumiere/core/issues)

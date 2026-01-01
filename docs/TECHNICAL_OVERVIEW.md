@@ -1,6 +1,6 @@
-# Deep dive: How Illuma Works
+# Deep dive: How Lumiere Works
 
-This article is an in-depth overview of how dependency injection works in Illuma, covering the internal architecture, data structures, and the lifecycle of dependency resolution and instantiation.
+This article is an in-depth overview of how dependency injection works in Lumiere, covering the internal architecture, data structures, and the lifecycle of dependency resolution and instantiation.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ This article is an in-depth overview of how dependency injection works in Illuma
 
 ## Overview
 
-Illuma implements a sophisticated dependency injection system that operates in distinct phases:
+Lumiere implements a sophisticated dependency injection system that operates in distinct phases:
 
 1. **Registration Phase**: Providers are registered and converted into proto nodes
 2. **Resolution Phase**: Proto nodes are resolved into tree nodes with full dependency graphs
@@ -114,7 +114,7 @@ Internally, the system uses two lightweight types of node representations:
 
 ### Context
 
-`InjectionContext` is a global state manager that tracks dependency injection calls during factory execution, allowing Illuma to discover dependencies dynamically.
+`InjectionContext` is a global state manager that tracks dependency injection calls during factory execution, allowing Lumiere to discover dependencies dynamically.
 
 While scanning, factories are being called in complete isolation. It means, `nodeInject` function does not actually provide a value, but a placeholder.
 
@@ -192,7 +192,7 @@ container.provide({
   useClass: UserService,
 });
 
-// Illuma creates:
+// Lumiere creates:
 new ProtoNodeSingle(
   USER_SERVICE_NODE,
   () => new UserService()
@@ -362,12 +362,12 @@ abstract class InjectionContext {
 
 #### 1. Scanning Phase (Registration)
 
-When a factory is registered, Illuma scans it to discover dependencies:
+When a factory is registered, Lumiere scans it to discover dependencies:
 
 ```typescript
 const factory = () => new UserService();
 
-// Illuma opens a context and tries to execute the factory
+// Lumiere opens a context and tries to execute the factory
 InjectionContext.open();
 try {
   factory(); // This will fail but that's okay
@@ -388,7 +388,7 @@ During scanning:
 
 #### 2. Instantiation Phase (Bootstrap)
 
-When instantiating a factory, Illuma provides actual dependencies:
+When instantiating a factory, Lumiere provides actual dependencies:
 
 ```typescript
 InjectionContext.instantiate(factory, (token, optional) => {

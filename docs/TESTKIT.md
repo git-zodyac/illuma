@@ -1,6 +1,6 @@
 # 🧪 Testing Guide
 
-The Illuma testkit provides framework-agnostic utilities for testing components that use dependency injection.
+The Lumiere testkit provides framework-agnostic utilities for testing components that use dependency injection.
 
 ## Table of contents
 
@@ -27,10 +27,10 @@ The Illuma testkit provides framework-agnostic utilities for testing components 
 
 ## Installation
 
-The testkit is included with Illuma. Import from the `/testkit` subpath:
+The testkit is included with Lumiere. Import from the `/testkit` subpath:
 
 ```typescript
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { createTestFactory } from '@lumiere/core/testkit';
 ```
 
 ## Quick start
@@ -38,8 +38,8 @@ import { createTestFactory } from '@zodyac/illuma/testkit';
 ### Basic service testing
 
 ```typescript
-import { NodeInjectable } from '@zodyac/illuma';
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { NodeInjectable } from '@lumiere/core';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 @NodeInjectable()
 class UserService {
@@ -62,8 +62,8 @@ describe('UserService', () => {
 ## Testing with dependencies
 
 ```typescript
-import { NodeInjectable, nodeInject, createProviderSet } from '@zodyac/illuma';
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { NodeInjectable, nodeInject } from '@lumiere/core';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 @NodeInjectable()
 class DatabaseService {
@@ -103,8 +103,8 @@ describe('UserRepository', () => {
 Replace real dependencies with mocks or stubs:
 
 ```typescript
-import { NodeInjectable, nodeInject, createProviderSet } from '@zodyac/illuma';
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { NodeInjectable, nodeInject } from '@lumiere/core';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 @NodeInjectable()
 class EmailService {
@@ -134,10 +134,10 @@ class NotificationService {
 describe('NotificationService', () => {
   const createTest = createTestFactory({
     target: NotificationService,
-    providers: createProviderSet({
+    provide: [
       provide: EmailService,
       useClass: MockEmailService,
-    }),
+    ],
   });
 
   it('should send notification via email', () => {
@@ -158,13 +158,8 @@ describe('NotificationService', () => {
 ## Testing with tokens
 
 ```typescript
-import {
-  createProviderSet
-  NodeToken,
-  NodeInjectable,
-  nodeInject,
-} from '@zodyac/illuma';
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { NodeToken, NodeInjectable, nodeInject } from '@lumiere/core';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 const API_URL = new NodeToken<string>('API_URL');
 const API_KEY = new NodeToken<string>('API_KEY');
@@ -182,10 +177,10 @@ class ApiClient {
 describe('ApiClient', () => {
   const createTest = createTestFactory({
     target: ApiClient,
-    providers: createProviderSet(
-      { provide: API_URL, value: 'https://api.test.com' },
-      { provide: API_KEY, value: 'test-key-123' },
-    ),
+    provide: [
+      API_URL.withValue('https://api.test.com'),
+      API_KEY.withValue('test-key-123'),
+    ],
   });
 
   it('should construct endpoint URL', () => {
@@ -199,13 +194,8 @@ describe('ApiClient', () => {
 ## Testing Multi-Token dependencies
 
 ```typescript
-import {
-  createProviderSet,
-  MultiNodeToken,
-  NodeInjectable,
-  nodeInject
-} from '@zodyac/illuma';
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { MultiNodeToken, NodeInjectable, nodeInject } from '@lumiere/core';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 interface Plugin {
   name: string;
@@ -216,7 +206,7 @@ const PLUGIN = new MultiNodeToken<Plugin>('PLUGIN');
 
 @NodeInjectable()
 class LoggerPlugin implements Plugin {
-  public name = 'logger';
+  public readonly name = 'logger';
   public execute() {
     console.log('Logging...');
   }
@@ -246,10 +236,10 @@ class PluginManager {
 describe('PluginManager', () => {
   const createTest = createTestFactory({
     target: PluginManager,
-    providers: createProviderSet(
-      { provide: PLUGIN, alias: LoggerPlugin },
-      { provide: PLUGIN, alias: CachePlugin },
-    ),
+    provide: [
+      PLUGIN.withAlias(LoggerPlugin),
+      PLUGIN.withAlias(CachePlugin),
+    ],
   });
 
   it('should have all plugins', () => {
@@ -265,13 +255,8 @@ describe('PluginManager', () => {
 Test services with optional dependencies:
 
 ```typescript
-import {
-  createProviderSet,
-  NodeToken,
-  NodeInjectable,
-  nodeInject
-} from '@zodyac/illuma';
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { NodeToken, NodeInjectable, nodeInject } from '@lumiere/core';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 const LOGGER = new NodeToken<{ log(msg: string): void }>('LOGGER');
 
@@ -298,7 +283,7 @@ describe('Service', () => {
     const mockLogger = { log: jest.fn() };
     const createTest = createTestFactory({
       target: Service,
-      providers: createProviderSet({ provide: LOGGER, value: mockLogger }),
+      provide: [LOGGER.withValue(mockLogger)],
     });
     
     const { instance } = createTest();
@@ -317,7 +302,7 @@ While the examples above use Jest, the testkit works with any JavaScript testing
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 describe('MyService', () => {
   const createTest = createTestFactory({ target: MyService });
@@ -333,7 +318,7 @@ describe('MyService', () => {
 
 ```typescript
 import { expect } from 'chai';
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 describe('MyService', () => {
   const createTest = createTestFactory({ target: MyService });
@@ -350,7 +335,7 @@ describe('MyService', () => {
 ```typescript
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { createTestFactory } from '@zodyac/illuma/testkit';
+import { createTestFactory } from '@lumiere/core/testkit';
 
 describe('MyService', () => {
   const createTest = createTestFactory({ target: MyService });
@@ -373,8 +358,7 @@ Creates a test factory for the specified target.
 | Parameter          | Type               | Description                                        |
 | ------------------ | ------------------ | -------------------------------------------------- |
 | `config.target`    | `Token<T>`         | The class or token to instantiate                  |
-| `config.providers` | `iNodeProviderSet` | *(Deprecated)* Providers via `createProviderSet()` |
-| `config.provide`   | `Provider[]`     | Array of providers to include                      |
+| `config.provide`   | `Provider[]`       | Array of providers to include                      |
 
 **Returns:** `TestFactoryFn<T>` - A function that creates test instances
 

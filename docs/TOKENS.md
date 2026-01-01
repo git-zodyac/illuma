@@ -1,6 +1,6 @@
 # 🏷️ Tokens
 
-This guide covers how to use tokens to identify and inject non-class dependencies in Illuma.
+This guide covers how to use tokens to identify and inject non-class dependencies in Lumiere.
 
 ## Table of contents
 
@@ -32,7 +32,7 @@ Tokens are unique identifiers for dependencies that aren't classes. They provide
 ### Creating tokens
 
 ```typescript
-import { NodeToken } from '@zodyac/illuma';
+import { NodeToken } from '@lumiere/core';
 
 // Simple tokens
 const API_URL = new NodeToken<string>('API_URL');
@@ -125,7 +125,7 @@ container.provide(DB.withAlias(PRIMARY_DB));
 ### Basic usage
 
 ```typescript
-import { MultiNodeToken } from '@zodyac/illuma';
+import { MultiNodeToken } from '@lumiere/core';
 
 interface Plugin {
   name: string;

@@ -1,6 +1,6 @@
 # 🔗 Async Injection & Sub-Containers
 
-This guide covers advanced dependency injection patterns using `injectAsync`, `injectGroupAsync`, and `injectChildrenAsync` for lazy-loading dependencies and managing sub-containers.
+This guide covers advanced dependency injection patterns using `injectAsync`, `injectGroupAsync`, and `injectEntryAsync` for lazy-loading dependencies and managing sub-containers.
 
 ## Table of contents
 
@@ -15,13 +15,14 @@ This guide covers advanced dependency injection patterns using `injectAsync`, `i
     - [Type safety](#type-safety)
     - [Caching behavior](#caching-behavior)
     - [Overriding dependencies](#overriding-dependencies)
-  - [injectEntryAsync](#injectEntryAsync)
-  - [injectGroupAsync](#injectgroupasync)
+  - [injectEntryAsync](#injectentryasync)
     - [Basic usage](#basic-usage-1)
+    - [When to use](#when-to-use)
+  - [injectGroupAsync](#injectgroupasync)
+    - [Basic usage](#basic-usage-2)
     - [Parent-Child relationships](#parent-child-relationships)
     - [Caching behavior](#caching-behavior-1)
     - [Overriding dependencies](#overriding-dependencies-1)
-  - [injectChildrenAsync (Deprecated)](#injectchildrenasync-deprecated)
   - [Common patterns](#common-patterns)
     - [Plugin Systems](#plugin-systems)
     - [Feature modules](#feature-modules)
@@ -37,14 +38,13 @@ This guide covers advanced dependency injection patterns using `injectAsync`, `i
 
 ## Overview
 
-Illuma provides three utilities for advanced async dependency injection:
+Lumiere provides three utilities for advanced async dependency injection:
 
 | Utility | Purpose | Returns |
 |---------|---------|---------|
 | `injectAsync` | Lazily inject a single dependency | The dependency instance |
 | `injectEntryAsync` | Create sub-container and resolve specific entrypoint | The entrypoint instance |
 | `injectGroupAsync` | Create isolated sub-container with array of providers | An injector |
-| `injectChildrenAsync` | *(deprecated)* Create sub-container with provider set | An injector |
 
 All utilities support:
 - ✅ Async factory functions
@@ -61,7 +61,7 @@ All utilities support:
 ### Basic usage
 
 ```typescript
-import { injectAsync, NodeInjectable } from '@zodyac/illuma';
+import { injectAsync, NodeInjectable } from '@lumiere/core';
 
 @NodeInjectable()
 class UserService {
@@ -209,7 +209,7 @@ class MyService {
 ### Basic usage
 
 ```typescript
-import { injectEntryAsync, NodeInjectable } from 'illuma';
+import { injectEntryAsync, NodeInjectable } from '@lumiere/core';
 
 @NodeInjectable()
 class Logger {
@@ -274,7 +274,7 @@ const service = await getService();
 ### Basic usage
 
 ```typescript
-import { injectGroupAsync, NodeInjectable, NodeToken } from '@zodyac/illuma';
+import { injectGroupAsync, NodeInjectable, NodeToken } from '@lumiere/core';
 
 const FEATURE_CONFIG = new NodeToken<FeatureConfig>('FEATURE_CONFIG');
 const FEATURE_SERVICE = new NodeToken<FeatureService>('FEATURE_SERVICE');
@@ -379,34 +379,6 @@ class AppService {
 ```
 
 Note: As with `injectAsync`, providing the same token in both the main providers and overrides will result in a duplicate provider error.
-
-## injectChildrenAsync (Deprecated)
-
-> **Deprecated:** Use `injectGroupAsync()` with array providers instead.
-
-```typescript
-// ❌ Old approach (deprecated)
-import { createProviderSet, injectChildrenAsync } from '@zodyac/illuma';
-
-private readonly getInjector = injectChildrenAsync(async () => {
-  return createProviderSet(
-    ServiceA,
-    ServiceB,
-    { provide: CONFIG, value: config }
-  );
-});
-
-// ✅ New approach (recommended)
-import { injectGroupAsync } from '@zodyac/illuma';
-
-private readonly getInjector = injectGroupAsync(async () => {
-  return [
-    ServiceA,
-    ServiceB,
-    { provide: CONFIG, value: config }
-  ];
-});
-```
 
 ## Common patterns
 
@@ -593,4 +565,4 @@ class LongLivedService {
 - [Getting Started](./GETTING_STARTED.md) - Basic setup and concepts
 - [Providers Guide](./PROVIDERS.md) - Provider types
 - [API Reference](./API.md) - Complete API documentation
-- [Testing Guide](./TESTKIT.md) - Testing with Illuma
+- [Testing Guide](./TESTKIT.md) - Testing with Lumiere

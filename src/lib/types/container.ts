@@ -1,7 +1,6 @@
 import type { MultiNodeToken, NodeToken } from "../api";
 import type { TreeNode } from "../provider";
 import type { Ctor, Provider, Token } from "./providers";
-import type { iNodeProviderSet } from "./set";
 
 /**
  * Interface for dependency injection containers.
@@ -14,12 +13,6 @@ export interface iDIContainer {
    * @param provider - The provider configuration
    */
   provide<T>(provider: Provider<T>): void;
-
-  /**
-   * Includes a provider set into the container.
-   * @param group - A provider set created with createProviderSet
-   */
-  include(group: iNodeProviderSet): void;
 
   /**
    * @internal Finds the tree node associated with the given token.

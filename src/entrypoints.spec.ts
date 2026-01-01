@@ -1,5 +1,5 @@
 describe("Package Entrypoints", () => {
-  describe("Main entrypoint (@zodyac/illuma)", () => {
+  describe("Main entrypoint (@lumiere/core)", () => {
     it("should export core API modules", async () => {
       const mainExports = await import("./index");
 
@@ -14,16 +14,14 @@ describe("Package Entrypoints", () => {
       expect(mainExports.getInjectableToken).toBeDefined();
       expect(mainExports.isNodeBase).toBeDefined();
       expect(mainExports.extractToken).toBeDefined();
-      expect(mainExports.createProviderSet).toBeDefined();
       expect(mainExports.INJECTION_SYMBOL).toBeDefined();
-      expect(mainExports.INJECTION_GROUP_SYMBOL).toBeDefined();
       expect(mainExports.NodeContainer).toBeDefined();
       expect(mainExports.InjectionContext).toBeDefined();
       expect(mainExports.InjectionError).toBeDefined();
     });
   });
 
-  describe("Testkit entrypoint (@zodyac/illuma/testkit)", () => {
+  describe("Testkit entrypoint (@lumiere/core/testkit)", () => {
     it("should export testkit utilities", async () => {
       const testkitExports = await import("./testkit");
 
@@ -32,11 +30,11 @@ describe("Package Entrypoints", () => {
     });
   });
 
-  describe("Plugins entrypoint (@zodyac/illuma/plugins)", () => {
+  describe("Plugins entrypoint (@lumiere/core/plugins)", () => {
     it("should export plugin modules", async () => {
       const pluginsExports = await import("./plugins");
 
-      expect(pluginsExports.Illuma).toBeDefined();
+      expect(pluginsExports.Lumiere).toBeDefined();
       expect(pluginsExports.DiagnosticsDefaultReporter).toBeDefined();
     });
   });
