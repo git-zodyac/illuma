@@ -51,7 +51,7 @@ describe("nodeInject", () => {
 
       InjectionContext.open();
 
-      const result = nodeInject(TestService);
+      nodeInject(TestService);
       const token = (TestService as any)[INJECTION_SYMBOL];
 
       const calls = InjectionContext.closeAndReport();
