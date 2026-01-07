@@ -14,24 +14,24 @@ This document provides detailed information about all error codes in Illuma and 
 
 ## Quick Reference
 
-| Code | Error | Quick Fix |
-|------|-------|-----------|
-| i100 | Duplicate Provider | Remove duplicate or use `MultiNodeToken` |
-| i101 | Duplicate Factory | Only provide one factory per token |
-| i102 | Invalid Constructor | Add `@NodeInjectable()` decorator |
-| i103 | Invalid Provider | Use valid provider syntax |
-| i200 | Invalid Alias | Use token or decorated class |
-| i201 | Loop Alias | Point alias to different token |
-| i300 | Not Bootstrapped | Call `bootstrap()` first |
-| i301 | Container Bootstrapped | Provide before `bootstrap()` |
-| i302 | Double Bootstrap | Only bootstrap once |
-| i400 | Provider Not Found | Provide the token or use `optional` |
-| i401 | Circular Dependency | Refactor to break cycle |
-| i500 | Untracked Injection | Use in class field initializers only |
-| i501 | Outside Context | Use only in fields/factories |
-| i502 | Called Utils Outside | Use only during instantiation |
-| i503 | Instance Access Failed | Check factory/constructor logic |
-| i504 | Access Failed | Check provider configuration |
+| Code | Error                  | Quick Fix                                |
+| ---- | ---------------------- | ---------------------------------------- |
+| i100 | Duplicate Provider     | Remove duplicate or use `MultiNodeToken` |
+| i101 | Duplicate Factory      | Only provide one factory per token       |
+| i102 | Invalid Constructor    | Add `@NodeInjectable()` decorator        |
+| i103 | Invalid Provider       | Use valid provider syntax                |
+| i200 | Invalid Alias          | Use token or decorated class             |
+| i201 | Loop Alias             | Point alias to different token           |
+| i300 | Not Bootstrapped       | Call `bootstrap()` first                 |
+| i301 | Container Bootstrapped | Provide before `bootstrap()`             |
+| i302 | Double Bootstrap       | Only bootstrap once                      |
+| i400 | Provider Not Found     | Provide the token or use `optional`      |
+| i401 | Circular Dependency    | Refactor to break cycle                  |
+| i500 | Untracked Injection    | Use in class field initializers only     |
+| i501 | Outside Context        | Use only in fields/factories             |
+| i502 | Called Utils Outside   | Use only during instantiation            |
+| i503 | Instance Access Failed | Check factory/constructor logic          |
+| i504 | Access Failed          | Check provider configuration             |
 
 ---
 
@@ -635,6 +635,31 @@ class ServiceB {
   }
 }
 // ✅ ServiceB depends on A, but A doesn't depend on B
+```
+
+**Option 3: Use Lazy Injection**
+You can use `injectLazy` to defer the resolution of one of the dependencies. This works because the dependency is not resolved until the function is called, breaking the cycle during instantiation in a cost of transparency on bootstrap.
+
+```typescript
+@NodeInjectable()
+class ServiceA {
+  // injectLazy returns a function () => ServiceB
+  private readonly injectB = injectLazy(ServiceB);
+  private get b() {
+    return this.injectB();
+  }
+
+public someMethod() {
+    // Resolve dependency only when needed
+    this.b.method();
+  }
+}
+
+@NodeInjectable()
+class ServiceB {
+  private readonly a = nodeInject(ServiceA);
+}
+// ✅ Initialization cycle is broken
 ```
 
 ---

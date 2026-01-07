@@ -46,6 +46,8 @@ Illuma provides three utilities for advanced async dependency injection:
 | `injectEntryAsync` | Create sub-container and resolve specific entrypoint | The entrypoint instance |
 | `injectGroupAsync` | Create isolated sub-container with array of providers | An injector |
 
+**Note:** For synchronous lazy injection (e.g. to solve circular dependencies without async/await), use [`injectLazy`](./API.md#injectLazy) instead.
+
 All utilities support:
 - ✅ Async factory functions
 - ✅ Dynamic imports for code splitting

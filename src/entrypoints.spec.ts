@@ -8,6 +8,7 @@ describe("Package Entrypoints", () => {
       expect(mainExports.MultiNodeToken).toBeDefined();
       expect(mainExports.NodeBase).toBeDefined();
       expect(mainExports.nodeInject).toBeDefined();
+      expect(mainExports.injectLazy).toBeDefined();
       expect(mainExports.NodeInjectable).toBeDefined();
       expect(mainExports.makeInjectable).toBeDefined();
       expect(mainExports.isInjectable).toBeDefined();
@@ -20,6 +21,7 @@ describe("Package Entrypoints", () => {
       expect(mainExports.NodeContainer).toBeDefined();
       expect(mainExports.InjectionContext).toBeDefined();
       expect(mainExports.InjectionError).toBeDefined();
+      expect(mainExports.ILLUMA_ERR_CODES).toBeDefined();
     });
   });
 

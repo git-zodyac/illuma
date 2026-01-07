@@ -8,6 +8,7 @@ Complete API documentation for Illuma's core classes, functions, and decorators.
 - [NodeToken](#nodetoken)
 - [MultiNodeToken](#multinodetoken)
 - [nodeInject](#nodeinject)
+- [injectLazy](#injectlazy)
 - [Injector](#injector)
 - [Decorators](#decorators)
 - [Async Injection Functions](#async-injection-functions)
@@ -202,6 +203,48 @@ class UserService {
     return this.cache?.get(id) ?? this.fetchFromDb(id);
   }
 }
+```
+
+---
+
+## injectLazy
+
+Lazily inject a dependency. Useful for handling circular dependencies or deferring resolution in a cost of transparency while bootstrapping.
+
+If the only injection point for the dependency is via `injectLazy`, it may appear unused in diagnostics.
+
+### Signature
+
+```typescript
+function injectLazy<T>(
+  token: Token<T>,
+  options?: { optional?: boolean }
+): () => T
+```
+
+| Parameter          | Type       | Description                                       |
+| ------------------ | ---------- | ------------------------------------------------- |
+| `token`            | `Token<T>` | The token or class to inject                      |
+| `options.optional` | `boolean`  | If `true`, returns function returning `T \| null` |
+
+### Usage
+
+```typescript
+@NodeInjectable()
+class ServiceA {
+  // Returns a function that resolves the dependency when called
+  private readonly injectB = injectLazy(ServiceB);
+
+  private get b(): ServiceB {
+    return this.injectB();
+  }
+
+  public doSomething() {
+    // Call the getter to access the instance
+    this.b.method();
+  }
+}
+// Note: injectLazy returns a function, so you must call it to get the instance or array of instances.
 ```
 
 ---
