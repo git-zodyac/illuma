@@ -215,4 +215,36 @@ describe("injectDefer", () => {
     const service = container.get(Service);
     expect(service.lazy()).toBe("present");
   });
+
+  it("should work with deferred containers", () => {
+    const container = new NodeContainer({ instant: false });
+    const token = new NodeToken<string>("TOKEN");
+    const factorySpy = jest.fn(() => "deferred-value");
+
+    @NodeInjectable()
+    class TestClass {
+      public readonly getValue = injectDefer(token);
+      public get valueNow() {
+        return this.getValue();
+      }
+    }
+
+    container.provide(token.withFactory(factorySpy));
+    container.provide(TestClass);
+
+    // Dry run
+    expect(factorySpy).toHaveBeenCalledTimes(1);
+
+    container.bootstrap();
+    // Not called
+    expect(factorySpy).toHaveBeenCalledTimes(1);
+    const instance = container.get(TestClass);
+
+    // Still not called
+    expect(factorySpy).toHaveBeenCalledTimes(1);
+
+    // First call
+    expect(instance.valueNow).toBe("deferred-value");
+    expect(factorySpy).toHaveBeenCalledTimes(2);
+  });
 });

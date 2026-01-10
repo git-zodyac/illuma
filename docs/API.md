@@ -23,12 +23,18 @@ The main dependency injection container.
 ### Constructor
 
 ```typescript
-new NodeContainer(options?: { measurePerformance?: boolean })
+new NodeContainer(options?: { 
+  measurePerformance?: boolean;
+  diagnostics?: boolean;
+  instant?: boolean;
+})
 ```
 
-| Parameter                    | Type      | Default | Description                   |
-| ---------------------------- | --------- | ------- | ----------------------------- |
-| `options.measurePerformance` | `boolean` | `false` | Enable performance monitoring |
+| Parameter                    | Type      | Default | Description                                                                              |
+| ---------------------------- | --------- | ------- | ---------------------------------------------------------------------------------------- |
+| `options.measurePerformance` | `boolean` | `false` | Enable performance monitoring                                                            |
+| `options.diagnostics`        | `boolean` | `false` | Enable diagnostics reporting                                                             |
+| `options.instant`            | `boolean` | `true`  | Whether to instantiate consumers immediately on bootstrap (true) or lazily (false)       |
 
 ### Methods
 

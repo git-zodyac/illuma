@@ -1,6 +1,43 @@
-import type { MultiNodeToken, NodeToken } from "../api";
-import type { TreeNode } from "../provider";
-import type { Ctor, Provider, Token } from "./providers";
+import { MultiNodeToken, NodeToken } from '../api/token';
+import { TreeNode } from '../provider/tree-node';
+import { Ctor, Provider, Token } from './providers';
+
+/**
+ * Configuration options for the NodeContainer.
+ */
+
+export interface iContainerOptions {
+  /**
+   * When true, logs the bootstrap time to the console based on performance.now()
+   * difference before and after bootstrap.
+   * @default false
+   */
+  measurePerformance?: boolean;
+
+  /**
+   * When true, enables diagnostics reporting after bootstrap.
+   * @default false
+   */
+  diagnostics?: boolean;
+
+  /**
+   * @internal
+   * The parent container for hierarchical dependency resolution.
+   */
+  parent?: iDIContainer;
+
+  /**
+   * @experimental
+   * Whether to instantiate dependencies immediately.
+   * If disabled, providers instantiation will happen when first requested.
+   * This helps improve startup performance for large containers.
+   * Enabled by default until stable.
+   *
+   * @default true
+   */
+  instant?: boolean;
+}
+
 
 /**
  * Interface for dependency injection containers.

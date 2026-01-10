@@ -83,44 +83,152 @@ describe("ProtoNodeMulti", () => {
 });
 
 describe("TreeRootNode", () => {
-  it("should add and instantiate dependencies", () => {
-    const root = new TreeRootNode();
-    const token = new NodeToken<string>("test");
-    const proto = new ProtoNodeSingle(token, () => "value");
-    const node = new TreeNodeSingle(proto);
+  describe("tree instantiation", () => {
+    it("should add and instantiate dependencies", () => {
+      const root = new TreeRootNode();
+      const token = new NodeToken<string>("test");
+      const proto = new ProtoNodeSingle(token, () => "value");
+      const node = new TreeNodeSingle(proto);
 
-    root.addDependency(node);
-    root.instantiate();
+      root.addDependency(node);
+      root.build();
 
-    expect(root.find(token)).toBe(node);
+      expect(root.find(token)).toBe(node);
+    });
+
+    it("should handle shared dependencies", () => {
+      const root = new TreeRootNode();
+      const sharedToken = new NodeToken<string>("shared");
+      const sharedProto = new ProtoNodeSingle(sharedToken, () => "shared-value");
+      const sharedNode = new TreeNodeSingle(sharedProto);
+
+      const node1Token = new NodeToken<string>("node1");
+      const node1Proto = new ProtoNodeSingle(node1Token, () => "value1");
+      const node1 = new TreeNodeSingle(node1Proto);
+      node1.addDependency(sharedNode);
+
+      const node2Token = new NodeToken<string>("node2");
+      const node2Proto = new ProtoNodeSingle(node2Token, () => "value2");
+      const node2 = new TreeNodeSingle(node2Proto);
+      node2.addDependency(sharedNode);
+
+      root.addDependency(node1);
+      root.addDependency(node2);
+      root.build();
+
+      expect(root.find(sharedToken)).toBe(sharedNode);
+    });
+
+    it("should return null when token not found", () => {
+      const root = new TreeRootNode();
+      expect(root.find(new NodeToken<string>("test"))).toBeNull();
+    });
   });
 
-  it("should handle shared dependencies", () => {
-    const root = new TreeRootNode();
-    const sharedToken = new NodeToken<string>("shared");
-    const sharedProto = new ProtoNodeSingle(sharedToken, () => "shared-value");
-    const sharedNode = new TreeNodeSingle(sharedProto);
+  describe("deferred instantiation", () => {
+    function createSingleNode<T>(
+      token: NodeToken<T>,
+      factory: () => T,
+    ): TreeNodeSingle<T> {
+      const proto = new ProtoNodeSingle(token, factory);
+      return new TreeNodeSingle(proto);
+    }
 
-    const node1Token = new NodeToken<string>("node1");
-    const node1Proto = new ProtoNodeSingle(node1Token, () => "value1");
-    const node1 = new TreeNodeSingle(node1Proto);
-    node1.addDependency(sharedNode);
+    it("should defer instantiation until find is called", () => {
+      const root = new TreeRootNode(false);
 
-    const node2Token = new NodeToken<string>("node2");
-    const node2Proto = new ProtoNodeSingle(node2Token, () => "value2");
-    const node2 = new TreeNodeSingle(node2Proto);
-    node2.addDependency(sharedNode);
+      const token = new NodeToken<string>("test");
+      const factorySpy = jest.fn(() => "value");
 
-    root.addDependency(node1);
-    root.addDependency(node2);
-    root.instantiate();
+      const node = createSingleNode(token, factorySpy);
 
-    expect(root.find(sharedToken)).toBe(sharedNode);
-  });
+      root.addDependency(node);
 
-  it("should return null when token not found", () => {
-    const root = new TreeRootNode();
-    expect(root.find(new NodeToken<string>("test"))).toBeNull();
+      // Dry run to obtain dependencies
+      expect(factorySpy).toHaveBeenCalledTimes(1);
+
+      root.build();
+
+      expect(factorySpy).toHaveBeenCalledTimes(1); // <- not called yet
+
+      const foundNode = root.find(token);
+
+      expect(foundNode?.instance).toBe("value");
+      expect(foundNode).toBe(node);
+      expect(factorySpy).toHaveBeenCalledTimes(2);
+    });
+
+    it("should defer instantiation of shared dependencies", () => {
+      const root = new TreeRootNode(false);
+
+      const sharedToken = new NodeToken<string>("shared");
+      const node1Token = new NodeToken<string>("node1");
+      const node2Token = new NodeToken<string>("node2");
+
+      const sharedFactorySpy = jest.fn(() => "shared-value");
+      const node1Factory = () => nodeInject(sharedToken).slice(0, 6);
+      const node2Factory = () => nodeInject(sharedToken).slice(7);
+
+      const sharedNode = createSingleNode(sharedToken, sharedFactorySpy);
+
+      const node1 = createSingleNode(node1Token, node1Factory);
+      node1.addDependency(sharedNode);
+
+      const node2 = createSingleNode(node2Token, node2Factory);
+      node2.addDependency(sharedNode);
+
+      root.addDependency(node1);
+      root.addDependency(node2);
+
+      root.build();
+      expect(sharedFactorySpy).toHaveBeenCalledTimes(1);
+
+      const foundNode1 = root.find(node1Token);
+      expect(sharedFactorySpy).toHaveBeenCalledTimes(2);
+      expect(foundNode1?.instance).toBe('shared');
+
+      const foundNode2 = root.find(node2Token);
+      expect(sharedFactorySpy).toHaveBeenCalledTimes(2);
+      expect(foundNode2?.instance).toBe('value');
+    });
+
+    it("should work when retrieving from the middle of the tree", () => {
+      const root = new TreeRootNode(false);
+
+      const deepToken = new NodeToken<string>("shared");
+      const token1 = new NodeToken<string>("node1");
+      const token2 = new NodeToken<string>("node2");
+
+      const deepFactorySpy = jest.fn(() => "shared-value");
+      const node1FactorySpy = jest.fn(() => nodeInject(deepToken).slice(0, 6));
+      const node2FactorySpy = jest.fn(() => nodeInject(token1).slice(3));
+
+      const deepNode = createSingleNode(deepToken, deepFactorySpy);
+      expect(deepFactorySpy).toHaveBeenCalledTimes(1);
+
+      const node1 = createSingleNode(token1, node1FactorySpy);
+      expect(node1FactorySpy).toHaveBeenCalledTimes(1);
+      node1.addDependency(deepNode);
+
+      const node2 = createSingleNode(token2, node2FactorySpy);
+      expect(node2FactorySpy).toHaveBeenCalledTimes(1);
+      node2.addDependency(node1);
+
+      root.addDependency(node2);
+      root.build();
+
+      const foundNode1 = root.find(token1);
+      expect(deepFactorySpy).toHaveBeenCalledTimes(2); // <- actual call
+      expect(node1FactorySpy).toHaveBeenCalledTimes(2); // <- actual call
+      expect(node2FactorySpy).toHaveBeenCalledTimes(1); // <- never called yet
+      expect(foundNode1?.instance).toBe('shared');
+
+      const foundNode2 = root.find(token2);
+      expect(deepFactorySpy).toHaveBeenCalledTimes(2); // <- never called again
+      expect(node1FactorySpy).toHaveBeenCalledTimes(2); // <- never called again
+      expect(node2FactorySpy).toHaveBeenCalledTimes(2); // <- actual call
+      expect(foundNode2?.instance).toBe('red');
+    })
   });
 });
 
@@ -317,7 +425,7 @@ describe("toString methods", () => {
   it("TreeNodeTransparent toString", () => {
     const token = new NodeToken("test");
     const parent = new ProtoNodeSingle(token);
-    const factory = function testFactory() {};
+    const factory = function testFactory() { };
     const proto = new ProtoNodeTransparent(parent, factory);
     const node = new TreeNodeTransparent(proto);
     expect(node.toString()).toBe(`TreeNodeTransparent<${token.toString()}>`);
@@ -339,7 +447,7 @@ describe("toString methods", () => {
   it("ProtoNodeTransparent toString", () => {
     const token = new NodeToken("test");
     const parent = new ProtoNodeSingle(token);
-    const factory = function testFactory() {};
+    const factory = function testFactory() { };
     const proto = new ProtoNodeTransparent(parent, factory);
     expect(proto.toString()).toBe("ProtoNodeTransparent<testFactory>");
   });
@@ -347,7 +455,7 @@ describe("toString methods", () => {
   it("ProtoNodeTransparent toString with anonymous factory", () => {
     const token = new NodeToken("test");
     const parent = new ProtoNodeSingle(token);
-    const proto = new ProtoNodeTransparent(parent, () => {});
+    const proto = new ProtoNodeTransparent(parent, () => { });
     expect(proto.toString()).toBe("ProtoNodeTransparent<anonymous>");
   });
 
@@ -444,7 +552,7 @@ describe("Extra Coverage", () => {
     const transNode = new TreeNodeTransparent(transProto);
 
     root.addDependency(transNode);
-    root.instantiate();
+    root.build();
 
     expect(transNode.instance).toBe("trans");
   });

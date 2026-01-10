@@ -5,8 +5,8 @@ import {
   isInjectable,
   isNodeBase,
   MultiNodeToken,
-  NodeToken,
   nodeInject,
+  NodeToken,
 } from "../api";
 import { isConstructor } from "../api/decorator";
 import { InjectionContext } from "../context";
@@ -21,22 +21,9 @@ import {
   resolveTreeNode,
   TreeRootNode,
 } from "../provider";
-import type { Ctor, iDIContainer, iNodeProvider, Provider, Token } from "../types";
+import type { iContainerOptions, iDIContainer } from "../types/container";
+import type { Ctor, iNodeProvider, Provider, Token } from "../types/providers";
 import { Injector, InjectorImpl } from "../utils";
-
-/**
- * Configuration options for the NodeContainer.
- */
-export interface iContainerOptions {
-  /**
-   * When true, logs the bootstrap time to the console based on performance.now()
-   * difference before and after bootstrap.
-   * @default false
-   */
-  measurePerformance?: boolean;
-  diagnostics?: boolean;
-  parent?: iDIContainer;
-}
 
 export class NodeContainer extends Illuma implements iDIContainer {
   private _bootstrapped = false;
@@ -193,7 +180,7 @@ export class NodeContainer extends Illuma implements iDIContainer {
   }
 
   private _buildInjectionTree(): TreeRootNode {
-    const root = new TreeRootNode();
+    const root = new TreeRootNode(this._opts?.instant);
     const cache = new Map<ProtoNode, TreeNode>();
 
     const nodes: ProtoNode[] = [
@@ -255,7 +242,7 @@ export class NodeContainer extends Illuma implements iDIContainer {
     });
 
     this._rootNode = this._buildInjectionTree();
-    this._rootNode.instantiate();
+    this._rootNode.build();
     this._bootstrapped = true;
 
     const end = performance.now();

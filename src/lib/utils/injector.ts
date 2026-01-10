@@ -1,6 +1,7 @@
 import type { MultiNodeToken } from "../api";
 import { NodeToken } from "../api/token";
-import type { Ctor, iDIContainer, Token } from "../types";
+import type { Ctor, Token } from "../types";
+import type { iDIContainer } from "../types/container";
 
 export interface iInjector {
   /** The DI container associated with this injector */
@@ -53,6 +54,7 @@ export class InjectorImpl implements iInjector {
  * @example
  * ```typescript
  * import { Injector, nodeInject, NodeInjectable, NodeContainer } from "@illuma/core";
+import { iDIContainer } from '../container/types';
  *
  * @NodeInjectable()
  * class MyService {
