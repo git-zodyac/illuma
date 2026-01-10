@@ -1,7 +1,7 @@
-import type { MultiNodeToken } from "../api";
+import type { MultiNodeToken } from "../api/token";
 import { NodeToken } from "../api/token";
-import type { Ctor, Token } from "../types";
-import type { iDIContainer } from "../types/container";
+import type { iDIContainer } from "../container/types";
+import type { Ctor, Token } from "../provider/types";
 
 export interface iInjector {
   /** The DI container associated with this injector */

@@ -1,7 +1,7 @@
 import { NodeContainer } from "../container/container";
 import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
-import { INJECTION_SYMBOL, NodeInjectable } from "./decorator";
+import { getInjectableToken, NodeInjectable } from "./decorator";
 import { nodeInject } from "./injection";
 import { SHAPE_SHIFTER } from "./proxy";
 import { MultiNodeToken, NodeToken } from "./token";
@@ -52,7 +52,7 @@ describe("nodeInject", () => {
       InjectionContext.open();
 
       nodeInject(TestService);
-      const token = (TestService as any)[INJECTION_SYMBOL];
+      const token = getInjectableToken(TestService);
 
       const calls = InjectionContext.closeAndReport();
       expect(calls.size).toBe(1);
@@ -173,7 +173,7 @@ describe("nodeInject", () => {
       nodeInject(TestService);
 
       expect(mockInjector).toHaveBeenCalledWith(
-        (TestService as any)[INJECTION_SYMBOL],
+        getInjectableToken(TestService),
         undefined,
       );
     });
@@ -239,11 +239,11 @@ describe("nodeInject", () => {
   });
 
   describe("INJECTION_SYMBOL handling", () => {
-    it("should extract token from class with INJECTION_SYMBOL", () => {
+    it("should extract token from class with getInjectableToken", () => {
       @NodeInjectable()
       class ServiceA {}
 
-      const extractedToken = (ServiceA as any)[INJECTION_SYMBOL];
+      const extractedToken = getInjectableToken(ServiceA);
       expect(extractedToken).toBeInstanceOf(NodeToken);
 
       InjectionContext.open();

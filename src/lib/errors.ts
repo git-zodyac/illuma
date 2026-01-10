@@ -1,5 +1,5 @@
-import { NodeBase } from "./api";
-import type { Ctor } from "./types";
+import { NodeBase } from "./api/token";
+import type { Ctor } from "./provider/types";
 
 export const ERR_CODES = {
   // Provider errors

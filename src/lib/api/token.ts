@@ -7,7 +7,7 @@ import type {
   iNodeTokenBaseOptions,
   iNodeValueProvider,
   Token,
-} from "../types";
+} from "../provider/types";
 import { getInjectableToken, isInjectable } from "./decorator";
 
 /**

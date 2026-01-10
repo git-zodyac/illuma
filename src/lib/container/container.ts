@@ -1,19 +1,11 @@
-import type { NodeBase } from "../api";
-import {
-  extractToken,
-  getInjectableToken,
-  isInjectable,
-  isNodeBase,
-  MultiNodeToken,
-  NodeToken,
-  nodeInject,
-} from "../api";
-import { isConstructor } from "../api/decorator";
+import { getInjectableToken, isConstructor, isInjectable } from "../api/decorator";
+import { nodeInject } from "../api/injection";
+import type { NodeBase } from "../api/token";
+import { extractToken, isNodeBase, MultiNodeToken, NodeToken } from "../api/token";
 import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
 import { Illuma } from "../plugins/core/plugin-container";
 import { DiagnosticsDefaultReporter } from "../plugins/diagnostics/default-impl";
-import type { ProtoNode, TreeNode, UpstreamGetter } from "../provider";
 import {
   extractProvider,
   ProtoNodeMulti,
@@ -21,9 +13,12 @@ import {
   resolveTreeNode,
   TreeRootNode,
 } from "../provider";
-import type { iContainerOptions, iDIContainer } from "../types/container";
-import type { Ctor, iNodeProvider, Provider, Token } from "../types/providers";
+import type { ProtoNode } from "../provider/proto";
+import type { UpstreamGetter } from "../provider/resolver";
+import type { TreeNode } from "../provider/tree-node";
+import type { Ctor, iNodeProvider, Provider, Token } from "../provider/types";
 import { Injector, InjectorImpl } from "../utils";
+import type { iContainerOptions, iDIContainer } from "./types";
 
 export class NodeContainer extends Illuma implements iDIContainer {
   private _bootstrapped = false;

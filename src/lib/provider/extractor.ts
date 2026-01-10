@@ -1,7 +1,7 @@
-import type { NodeBase } from "../api";
-import { extractToken } from "../api";
+import type { NodeBase } from "../api/token";
+import { extractToken } from "../api/token";
 import { InjectionError } from "../errors";
-import type { iNodeProvider } from "../types";
+import type { iNodeProvider } from "./types";
 
 export function extractProvider<T>(provider: iNodeProvider<T>): NodeBase<T> | (() => T) {
   if ("value" in provider) return () => provider.value;

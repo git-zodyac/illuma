@@ -1,4 +1,4 @@
-import type { iInjectionNode } from "../../context/node";
+import type { iInjectionNode } from "../../context/types";
 
 /**
  * An extension that can scan a factory function for dependency injections.

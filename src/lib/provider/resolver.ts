@@ -1,7 +1,7 @@
-import type { NodeBase } from "../api";
-import { getInjectableToken, isInjectable, MultiNodeToken, NodeToken } from "../api";
+import { getInjectableToken, isInjectable } from "../api/decorator";
+import type { NodeBase } from "../api/token";
+import { MultiNodeToken, NodeToken } from "../api/token";
 import { InjectionError } from "../errors";
-import type { Token } from "../types";
 import type { ProtoNode } from "./proto";
 import {
   isNotTransparentProto,
@@ -11,6 +11,7 @@ import {
 } from "./proto";
 import type { TreeNode } from "./tree-node";
 import { TreeNodeMulti, TreeNodeSingle, TreeNodeTransparent } from "./tree-node";
+import type { Token } from "./types";
 
 export type UpstreamGetter = <T>(token: Token<T>) => TreeNode<T> | null;
 interface StackFrame {

@@ -1,10 +1,14 @@
-import type { NodeBase } from "../api";
-import type { InjectorFn } from "../context";
-import { InjectionContext } from "../context";
+import type { NodeBase } from "../api/token";
+import type { InjectorFn } from "../api/types";
+import { InjectionContext } from "../context/context";
 import { InjectionError } from "../errors";
 import type { ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
 
+/** @deprecated */
 export type DependencyPool = Map<NodeBase<any>, TreeNode<any>>;
+export type InjectionPool =
+  | Map<NodeBase<any>, TreeNode<any>>
+  | WeakMap<NodeBase<any>, TreeNode<any>>;
 
 function retrieverFactory<T>(
   node: NodeBase<T>,
@@ -28,7 +32,7 @@ function retrieverFactory<T>(
 // Tree Nodes
 export class TreeRootNode {
   private readonly _deps: Set<TreeNode<any>> = new Set();
-  private readonly _treePool: DependencyPool = new Map();
+  private readonly _treePool: InjectionPool = new WeakMap();
 
   constructor(public readonly instant = true) {}
 
@@ -85,14 +89,14 @@ export class TreeNodeSingle<T = any> {
     node.allocations++;
   }
 
-  public collectPool(pool: DependencyPool): void {
+  public collectPool(pool: InjectionPool): void {
     for (const node of this._deps.values()) node.collectPool(pool);
     for (const dep of this._transparent) dep.collectPool(pool);
 
     pool.set(this.proto.token, this);
   }
 
-  public instantiate(pool?: DependencyPool): void {
+  public instantiate(pool?: InjectionPool): void {
     if (this._resolved) return;
 
     for (const node of this._deps.values()) node.instantiate(pool);
@@ -133,12 +137,12 @@ export class TreeNodeTransparent<T = any> {
     node.allocations++;
   }
 
-  public collectPool(pool: DependencyPool): void {
+  public collectPool(pool: InjectionPool): void {
     for (const node of this._deps.values()) node.collectPool(pool);
     for (const dep of this._transparent) dep.collectPool(pool);
   }
 
-  public instantiate(pool?: DependencyPool): void {
+  public instantiate(pool?: InjectionPool): void {
     if (this._resolved) return;
 
     for (const dep of this._transparent) dep.instantiate(pool);
@@ -167,12 +171,12 @@ export class TreeNodeMulti<T = any> {
 
   constructor(public readonly proto: ProtoNodeMulti<T>) {}
 
-  public collectPool(pool: DependencyPool): void {
+  public collectPool(pool: InjectionPool): void {
     for (const dep of this._deps) dep.collectPool(pool);
     pool.set(this.proto.token, this);
   }
 
-  public instantiate(pool?: DependencyPool): void {
+  public instantiate(pool?: InjectionPool): void {
     if (this._resolved) return;
 
     for (const dep of this._deps) {

@@ -1,4 +1,4 @@
-import type { NodeBase } from "../api";
+import type { NodeBase } from "../api/token";
 
 /**
  * Represents a constructor function type.

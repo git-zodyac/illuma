@@ -1,10 +1,10 @@
-import { InjectionContext } from "../context";
+import { InjectionContext } from "../context/context";
 import { InjectionError } from "../errors";
-import type { ExtractInjectedType, iNodeInjectorOptions } from "../types";
 import { getInjectableToken, isInjectable } from "./decorator";
 import { SHAPE_SHIFTER } from "./proxy";
 import type { MultiNodeToken, NodeToken } from "./token";
 import { isNodeBase } from "./token";
+import type { ExtractInjectedType, iNodeInjectorOptions } from "./types";
 
 /**
  * Injects a dependency within a factory function or constructor.

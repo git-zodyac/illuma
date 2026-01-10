@@ -1,10 +1,7 @@
-import type { NodeBase } from "../api/token";
+import type { InjectorFn } from "../api/types";
 import { InjectionError } from "../errors";
 import { Illuma } from "../plugins/core/plugin-container";
-import type { iInjectionNode } from "./node";
-
-/** @internal */
-export type InjectorFn = (token: NodeBase<any>, optional?: boolean) => any;
+import type { iInjectionNode } from "./types";
 
 /**
  * Internal context manager for tracking dependency injections during factory execution.

@@ -1,7 +1,7 @@
-import type { NodeBase } from "../api";
-import { MultiNodeToken, NodeToken } from "../api";
-import type { iInjectionNode } from "../context";
-import { InjectionContext } from "../context";
+import type { NodeBase } from "../api/token";
+import { MultiNodeToken, NodeToken } from "../api/token";
+import { InjectionContext } from "../context/context";
+import type { iInjectionNode } from "../context/types";
 import { InjectionError } from "../errors";
 
 export class ProtoNodeSingle<T = any> {

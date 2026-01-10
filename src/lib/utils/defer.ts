@@ -3,8 +3,8 @@ import { nodeInject } from "../api/injection";
 import { SHAPE_SHIFTER } from "../api/proxy";
 import type { MultiNodeToken, NodeToken } from "../api/token";
 import { isNodeBase } from "../api/token";
+import type { ExtractInjectedType, iNodeInjectorOptions } from "../api/types";
 import { InjectionError, isNotFoundError } from "../errors";
-import type { ExtractInjectedType, iNodeInjectorOptions } from "../types/injection";
 import { Injector } from "./injector";
 
 export function injectDefer<N>(

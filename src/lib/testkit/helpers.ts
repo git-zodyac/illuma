@@ -1,7 +1,8 @@
-import type { NodeInjectFn } from "../api";
-import { NodeContainer } from "../container";
+import type { NodeInjectFn } from "../api/injection";
+import type { iNodeInjectorOptions } from "../api/types";
+import { NodeContainer } from "../container/container";
 import { InjectionError } from "../errors";
-import type { iNodeInjectorOptions, Provider, Token } from "../types";
+import type { Provider, Token } from "../provider/types";
 
 /**
  * Spectator object returned by test factory functions.

@@ -1,7 +1,8 @@
-import type { MultiNodeToken, NodeToken } from "../api";
-import { extractToken, nodeInject } from "../api";
+import { nodeInject } from "../api/injection";
+import type { MultiNodeToken, NodeToken } from "../api/token";
+import { extractToken } from "../api/token";
 import { NodeContainer } from "../container";
-import type { Ctor, Provider, Token } from "../types";
+import type { Ctor, Provider, Token } from "../provider/types";
 import type { iInjector } from "./injector";
 import { Injector } from "./injector";
 
