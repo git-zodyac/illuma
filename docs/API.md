@@ -12,6 +12,7 @@ Complete API documentation for Illuma's core classes, functions, and decorators.
 - [Injector](#injector)
 - [Decorators](#decorators)
 - [Async Injection Functions](#async-injection-functions)
+- [Plugin API](#plugin-api)
 - [Type Definitions](#type-definitions)
 
 ---
@@ -27,6 +28,7 @@ new NodeContainer(options?: {
   measurePerformance?: boolean;
   diagnostics?: boolean;
   instant?: boolean;
+  parent?: iDIContainer;
 })
 ```
 
@@ -35,6 +37,7 @@ new NodeContainer(options?: {
 | `options.measurePerformance` | `boolean` | `false` | Enable performance monitoring                                                            |
 | `options.diagnostics`        | `boolean` | `false` | Enable diagnostics reporting                                                             |
 | `options.instant`            | `boolean` | `true`  | Whether to instantiate consumers immediately on bootstrap (true) or lazily (false)       |
+| `options.parent`             | `iDIContainer` | `undefined` | Optional parent container for hierarchical injection                                   |
 
 ### Methods
 
@@ -97,6 +100,17 @@ const handler = container.produce(RequestHandler);
 const config = container.produce(() => {
   const env = nodeInject(Environment);
   return { apiUrl: env.apiUrl, timeout: 5000 };
+});
+```
+
+#### `registerMiddleware(middleware: iMiddleware): void`
+
+Register a middleware function to run during instance creation for this container.
+
+```typescript
+container.registerMiddleware((params, next) => {
+  console.log('Instantiating', params.token.name);
+  return next(params);
 });
 ```
 
@@ -477,6 +491,67 @@ class AppService {
 
 ---
 
+## Plugin API
+
+Static methods available on the `Illuma` class for hooking into the DI system.
+
+### Scanners
+
+#### `Illuma.extendContextScanner(scanner: iContextScanner): void`
+
+Register a custom scanner to detect injection points. Illuma's default scanner detects `nodeInject` calls by executing the factory in a proxy context. You can add scanners to support other forms of injection detection.
+
+```typescript
+import { Illuma, type iContextScanner } from '@illuma/core/plugins';
+
+const myScanner: iContextScanner = {
+  scan(factory) {
+    // Custom logic to analyze the factory function
+    // Return a Set of injection nodes found
+    return new Set();
+  }
+};
+
+Illuma.extendContextScanner(myScanner);
+```
+
+### Diagnostics
+
+#### `Illuma.extendDiagnostics(module: iDiagnosticsModule): void`
+
+Register a custom diagnostics module. These modules receive a report after a container is bootstrapped, providing insights into the dependency graph.
+
+The container must be initialized with `diagnostics: true`.
+
+```typescript
+import { Illuma, type iDiagnosticsModule } from '@illuma/core/plugins';
+
+const reporter: iDiagnosticsModule = {
+  onReport(report) {
+    console.log(`Total nodes: ${report.totalNodes}`);
+    console.log(`Unused nodes: ${report.unusedNodes.length}`);
+    console.log(`Bootstrap time: ${report.bootstrapDuration}ms`);
+  }
+};
+
+Illuma.extendDiagnostics(reporter);
+```
+
+### `Illuma.registerGlobalMiddleware(middleware: iMiddleware): void`
+
+Register a middleware function that will run for **all** containers and providers.
+
+```typescript
+import { Illuma } from 'illuma';
+
+Illuma.registerGlobalMiddleware((params, next) => {
+  // Logic goes here
+  return next(params);
+});
+```
+
+---
+
 ## Type definitions
 
 ### Token<T>
@@ -539,6 +614,28 @@ Interface for container/injector access.
 interface iInjector {
   get<T>(token: Token<T>): T;
   produce<T>(fn: Ctor<T> | (() => T)): T;
+}
+```
+
+### iMiddleware
+
+Middleware function type.
+
+```typescript
+type iMiddleware<T = unknown> = (
+  params: iInstantiationParams<T>,
+  next: (params: iInstantiationParams<T>) => T,
+) => T;
+```
+
+### iInstantiationParams
+
+Parameters passed to middleware.
+
+```typescript
+interface iInstantiationParams<T = unknown> {
+  readonly token: NodeBase<T>;
+  readonly factory: () => T;
 }
 ```
 

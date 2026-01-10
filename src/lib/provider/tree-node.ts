@@ -2,7 +2,9 @@ import type { NodeBase } from "../api/token";
 import type { InjectorFn } from "../api/types";
 import { InjectionContext } from "../context/context";
 import { InjectionError } from "../errors";
+import type { iInstantiationParams, iMiddleware } from "../plugins/middlewares";
 import type { ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
+import { Injector } from '../utils/injector';
 
 /** @deprecated */
 export type DependencyPool = Map<NodeBase<any>, TreeNode<any>>;
@@ -10,9 +12,22 @@ export type InjectionPool =
   | Map<NodeBase<any>, TreeNode<any>>
   | WeakMap<NodeBase<any>, TreeNode<any>>;
 
+function runMiddlewares<T>(
+  middlewares: iMiddleware[],
+  params: iInstantiationParams<T>,
+): T {
+  const ms = middlewares as iMiddleware<T>[];
+  const next = (i: number, current: iInstantiationParams<T>): T => {
+    if (i >= ms.length) return current.factory();
+    return ms[i](current, (nextParams) => next(i + 1, nextParams));
+  };
+
+  return next(0, params);
+}
+
 function retrieverFactory<T>(
   node: NodeBase<T>,
-  deps: DependencyPool,
+  deps: InjectionPool,
   transparentDeps: Set<TreeNodeTransparent>,
 ): InjectorFn {
   return (token: NodeBase<T>, optional: boolean | undefined): T | null => {
@@ -34,7 +49,10 @@ export class TreeRootNode {
   private readonly _deps: Set<TreeNode<any>> = new Set();
   private readonly _treePool: InjectionPool = new WeakMap();
 
-  constructor(public readonly instant = true) {}
+  constructor(
+    public readonly instant = true,
+    protected readonly middlewares: iMiddleware[] = [],
+  ) {}
 
   public get dependencies(): Set<TreeNode<any>> {
     return this._deps;
@@ -48,7 +66,7 @@ export class TreeRootNode {
     for (const dep of this._deps) {
       if ("token" in dep.proto) this._treePool.set(dep.proto.token, dep);
 
-      if (this.instant) dep.instantiate(this._treePool);
+      if (this.instant) dep.instantiate(this._treePool, this.middlewares);
       else dep.collectPool(this._treePool);
     }
   }
@@ -57,7 +75,7 @@ export class TreeRootNode {
     const node = this._treePool.get(token);
     if (!node) return null;
 
-    if (!this.instant) node.instantiate(this._treePool);
+    if (!this.instant) node.instantiate(this._treePool, this.middlewares);
     return node as TreeNode<T>;
   }
 
@@ -81,7 +99,13 @@ export class TreeNodeSingle<T = any> {
     return this._instance as T;
   }
 
-  constructor(public readonly proto: ProtoNodeSingle<T>) {}
+  constructor(public readonly proto: ProtoNodeSingle<T>) {
+    if (proto.token === Injector) {
+      // biome-ignore lint/style/noNonNullAssertion: Instantiate Injector immediately
+      this._instance = proto.factory!() as unknown as T;
+      this._resolved = true;
+    }
+  }
 
   public addDependency(node: TreeNode<any>): void {
     if (node instanceof TreeNodeTransparent) this._transparent.add(node);
@@ -96,18 +120,24 @@ export class TreeNodeSingle<T = any> {
     pool.set(this.proto.token, this);
   }
 
-  public instantiate(pool?: InjectionPool): void {
+  public instantiate(pool?: InjectionPool, middlewares: iMiddleware[] = []): void {
     if (this._resolved) return;
 
-    for (const node of this._deps.values()) node.instantiate(pool);
-    for (const dep of this._transparent) dep.instantiate(pool);
+    for (const node of this._deps.values()) node.instantiate(pool, middlewares);
+    for (const dep of this._transparent) dep.instantiate(pool, middlewares);
 
     const retriever = retrieverFactory(this.proto.token, this._deps, this._transparent);
     const factory = this.proto.factory ?? this.proto.token.opts?.factory;
     if (!factory) throw InjectionError.notFound(this.proto.token);
-    this._instance = InjectionContext.instantiate(factory, retriever);
+
+    const contextFactory = () => InjectionContext.instantiate(factory, retriever);
+    this._instance = runMiddlewares(middlewares, {
+      token: this.proto.token,
+      factory: contextFactory,
+    });
 
     this._resolved = true;
+
     if (pool) pool.set(this.proto.token, this);
   }
 
@@ -142,11 +172,11 @@ export class TreeNodeTransparent<T = any> {
     for (const dep of this._transparent) dep.collectPool(pool);
   }
 
-  public instantiate(pool?: InjectionPool): void {
+  public instantiate(pool?: InjectionPool, middlewares: iMiddleware[] = []): void {
     if (this._resolved) return;
 
-    for (const dep of this._transparent) dep.instantiate(pool);
-    for (const node of this._deps.values()) node.instantiate(pool);
+    for (const dep of this._transparent) dep.instantiate(pool, middlewares);
+    for (const node of this._deps.values()) node.instantiate(pool, middlewares);
 
     const retriever = retrieverFactory(
       this.proto.parent.token,
@@ -154,7 +184,12 @@ export class TreeNodeTransparent<T = any> {
       this._transparent,
     );
 
-    this._instance = InjectionContext.instantiate(this.proto.factory, retriever);
+    const refFactory = () => InjectionContext.instantiate(this.proto.factory, retriever);
+    this._instance = runMiddlewares(middlewares, {
+      token: this.proto.parent.token,
+      factory: refFactory,
+    });
+
     this._resolved = true;
   }
 
@@ -176,11 +211,11 @@ export class TreeNodeMulti<T = any> {
     pool.set(this.proto.token, this);
   }
 
-  public instantiate(pool?: InjectionPool): void {
+  public instantiate(pool?: InjectionPool, middlewares: iMiddleware[] = []): void {
     if (this._resolved) return;
 
     for (const dep of this._deps) {
-      dep.instantiate(pool);
+      dep.instantiate(pool, middlewares);
 
       if (dep instanceof TreeNodeSingle) {
         this.instance.push(dep.instance);

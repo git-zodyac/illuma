@@ -6,6 +6,7 @@ import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
 import { Illuma } from "../plugins/core/plugin-container";
 import { DiagnosticsDefaultReporter } from "../plugins/diagnostics/default-impl";
+import type { iMiddleware } from "../plugins/middlewares";
 import {
   extractProvider,
   ProtoNodeMulti,
@@ -175,7 +176,8 @@ export class NodeContainer extends Illuma implements iDIContainer {
   }
 
   private _buildInjectionTree(): TreeRootNode {
-    const root = new TreeRootNode(this._opts?.instant);
+    const middlewares = [...Illuma._middlewares, ...this.collectMiddlewares()];
+    const root = new TreeRootNode(this._opts?.instant, middlewares);
     const cache = new Map<ProtoNode, TreeNode>();
 
     const nodes: ProtoNode[] = [
@@ -204,6 +206,17 @@ export class NodeContainer extends Illuma implements iDIContainer {
     this._multiProtoNodes.clear();
 
     return root;
+  }
+
+  protected collectMiddlewares(): iMiddleware[] {
+    return [
+      ...(this._parent &&
+      "collectMiddlewares" in this._parent &&
+      typeof this._parent.collectMiddlewares === "function"
+        ? this._parent.collectMiddlewares()
+        : []),
+      ...this.middlewares,
+    ];
   }
 
   /**

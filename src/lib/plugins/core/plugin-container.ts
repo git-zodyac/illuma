@@ -1,5 +1,6 @@
 import type { iContextScanner } from "../context";
 import type { iDiagnosticsModule, iDiagnosticsReport } from "../diagnostics/types";
+import type { iMiddleware } from "../middlewares/types";
 
 /**
  * Global plugin container for managing core plugins such as diagnostics and context scanners.
@@ -7,6 +8,7 @@ import type { iDiagnosticsModule, iDiagnosticsReport } from "../diagnostics/type
 export abstract class Illuma {
   private static readonly _diagnostics = [] as iDiagnosticsModule[];
   private static readonly _scanners = [] as iContextScanner[];
+  protected static readonly _middlewares = [] as iMiddleware[];
 
   /** @internal */
   public static get contextScanners(): ReadonlyArray<iContextScanner> {
@@ -31,6 +33,22 @@ export abstract class Illuma {
    */
   public static extendContextScanner(scanner: iContextScanner): void {
     Illuma._scanners.push(scanner);
+  }
+
+  /**
+   * Registers a global middleware to be applied during instance creation.
+   * Typically used for cross-cutting concerns like logging, profiling, or custom instantiation logic.
+   * Function should accept instantiation parameters and a `next` function to proceed with the next middleware or actual instantiation.
+   *
+   * @param m - The middleware function to register
+   */
+  public static registerGlobalMiddleware(m: iMiddleware): void {
+    Illuma._middlewares.push(m);
+  }
+
+  protected readonly middlewares = [] as iMiddleware[];
+  public registerMiddleware(m: iMiddleware): void {
+    this.middlewares.push(m);
   }
 
   protected static onReport(report: iDiagnosticsReport): void {

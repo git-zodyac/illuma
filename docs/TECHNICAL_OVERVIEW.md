@@ -279,7 +279,7 @@ The root of the dependency tree that manages all top-level dependencies:
 ```typescript
 class TreeRootNode {
   private readonly _deps: Set<TreeNode<any>> = new Set();
-  private readonly _treePool: DependencyPool = new Map();
+  private readonly _treePool: InjectionPool = new WeakMap();
 
   constructor(public readonly instant = true) {}
 
@@ -613,7 +613,7 @@ Each tree node instantiates its dependencies before instantiating itself, ensuri
 
 ```typescript
 class TreeNodeSingle<T> {
-  public instantiate(pool?: DependencyPool): void {
+  public instantiate(pool?: InjectionPool): void {
     if (this._resolved) return; // Already instantiated
 
     // 1. Instantiate all dependencies first
@@ -625,10 +625,6 @@ class TreeNodeSingle<T> {
     }
 
     // 2. Create retriever for nodeInject calls
-    const retriever = (token, optional) => {
-      const depNode = this._deps.get(token);
-      if (!depNode && !optional) throw InjectionError.untracked(token);
-    // (Detailed retriever logic handles local deps and transparent deps)
     const retriever = retrieverFactory(this.proto.token, this._deps, this._transparent);
 
     // 3. Execute factory within injection context
@@ -644,7 +640,7 @@ class TreeNodeSingle<T> {
 
 ```typescript
 class TreeNodeMulti<T> {
-  public instantiate(pool?: DependencyPool): void {
+  public instantiate(pool?: InjectionPool): void {
     if (this._resolved) return;
 
     // Instantiate all dependencies and collect instances
@@ -690,6 +686,87 @@ const retriever = (token: NodeBase<any>, optional?: boolean) => {
 ```
 
 When `nodeInject()` is called during factory execution, it calls this retriever to get the actual instance.
+
+## Middlewares
+
+Middlewares provide a powerful mechanism to intercept the instantiation process of providers. They can be used for cross-cutting concerns such as logging, profiling, or implementing custom instantiation logic (e.g., proxifying instances).
+
+### How It Works
+
+A middleware is a function that wraps the factory execution of a provider. It receives the instantiation parameters and a `next` function. The middleware can inspect the parameters, execute logic before instantiation, call `next` to proceed with instantiation, and execute logic after instantiation (on the result).
+
+### Middleware Signature
+
+```typescript
+type iMiddleware<T = unknown> = (
+  params: iInstantiationParams<T>,
+  next: (params: iInstantiationParams<T>) => T,
+) => T;
+
+interface iInstantiationParams<T = unknown> {
+  readonly token: NodeBase<T>;
+  readonly factory: () => T;
+}
+```
+
+- **params**: Contains the `token` being instantiated and the original `factory` function.
+- **next**: The function to call to proceed with the chain. It returns the instance of `T`.
+
+### Middleware Scopes
+
+Middlewares can be registered at two scopes:
+
+1.  **Container Scope**: Applies only to providers instantiated by a specific container.
+    ```typescript
+    container.registerMiddleware((params, next) => {
+      console.log(`Instantiating ${params.token.name}`);
+      return next(params);
+    });
+    ```
+
+2.  **Global Scope**: Applies to all providers in all containers.
+    ```typescript
+    import { Illuma } from 'illuma';
+    
+    Illuma.registerGlobalMiddleware((params, next) => {
+      // Global logic
+      return next(params);
+    });
+    ```
+
+### Execution Order
+
+Middlewares are executed in the order they were registered. Global middlewares run before container-scoped middlewares if implemented that way (need to verify, but typically global applies first or alongside).
+If the container has a parent, the parent's middlewares are executed before the child's.
+
+In the current implementation, all middlewares (global and local) are collected and executed in sequence:
+
+```
+global -> grand-parent container -> parent container -> local container
+``` 
+
+### Example: Proxy Middleware
+
+Here is an example of a middleware that wraps every instance in a Proxy:
+
+```typescript
+const proxyMiddleware: iMiddleware = (params, next) => {
+  const instance = next(params);
+  
+  if (typeof instance === 'object' && instance !== null) {
+    return new Proxy(instance, {
+      get(target, prop) {
+        console.log(`Accessing ${String(prop)} on ${params.token.name}`);
+        return Reflect.get(target, prop);
+      }
+    });
+  }
+  
+  return instance;
+};
+
+container.registerMiddleware(proxyMiddleware);
+```
 
 ## Child Containers
 

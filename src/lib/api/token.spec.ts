@@ -1,5 +1,5 @@
 import { InjectionError } from "../errors";
-import type { Token } from "../types";
+import type { Token } from "../provider/types";
 import { INJECTION_SYMBOL } from "./decorator";
 import { extractToken, isNodeBase, MultiNodeToken, NodeBase, NodeToken } from "./token";
 
