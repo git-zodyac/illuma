@@ -185,11 +185,11 @@ describe("TreeRootNode", () => {
 
       const foundNode1 = root.find(node1Token);
       expect(sharedFactorySpy).toHaveBeenCalledTimes(2);
-      expect(foundNode1?.instance).toBe('shared');
+      expect(foundNode1?.instance).toBe("shared");
 
       const foundNode2 = root.find(node2Token);
       expect(sharedFactorySpy).toHaveBeenCalledTimes(2);
-      expect(foundNode2?.instance).toBe('value');
+      expect(foundNode2?.instance).toBe("value");
     });
 
     it("should work when retrieving from the middle of the tree", () => {
@@ -221,14 +221,14 @@ describe("TreeRootNode", () => {
       expect(deepFactorySpy).toHaveBeenCalledTimes(2); // <- actual call
       expect(node1FactorySpy).toHaveBeenCalledTimes(2); // <- actual call
       expect(node2FactorySpy).toHaveBeenCalledTimes(1); // <- never called yet
-      expect(foundNode1?.instance).toBe('shared');
+      expect(foundNode1?.instance).toBe("shared");
 
       const foundNode2 = root.find(token2);
       expect(deepFactorySpy).toHaveBeenCalledTimes(2); // <- never called again
       expect(node1FactorySpy).toHaveBeenCalledTimes(2); // <- never called again
       expect(node2FactorySpy).toHaveBeenCalledTimes(2); // <- actual call
-      expect(foundNode2?.instance).toBe('red');
-    })
+      expect(foundNode2?.instance).toBe("red");
+    });
   });
 });
 
@@ -425,7 +425,7 @@ describe("toString methods", () => {
   it("TreeNodeTransparent toString", () => {
     const token = new NodeToken("test");
     const parent = new ProtoNodeSingle(token);
-    const factory = function testFactory() { };
+    const factory = function testFactory() {};
     const proto = new ProtoNodeTransparent(parent, factory);
     const node = new TreeNodeTransparent(proto);
     expect(node.toString()).toBe(`TreeNodeTransparent<${token.toString()}>`);
@@ -447,7 +447,7 @@ describe("toString methods", () => {
   it("ProtoNodeTransparent toString", () => {
     const token = new NodeToken("test");
     const parent = new ProtoNodeSingle(token);
-    const factory = function testFactory() { };
+    const factory = function testFactory() {};
     const proto = new ProtoNodeTransparent(parent, factory);
     expect(proto.toString()).toBe("ProtoNodeTransparent<testFactory>");
   });
@@ -455,7 +455,7 @@ describe("toString methods", () => {
   it("ProtoNodeTransparent toString with anonymous factory", () => {
     const token = new NodeToken("test");
     const parent = new ProtoNodeSingle(token);
-    const proto = new ProtoNodeTransparent(parent, () => { });
+    const proto = new ProtoNodeTransparent(parent, () => {});
     expect(proto.toString()).toBe("ProtoNodeTransparent<anonymous>");
   });
 

@@ -5,8 +5,8 @@ import {
   isInjectable,
   isNodeBase,
   MultiNodeToken,
-  nodeInject,
   NodeToken,
+  nodeInject,
 } from "../api";
 import { isConstructor } from "../api/decorator";
 import { InjectionContext } from "../context";

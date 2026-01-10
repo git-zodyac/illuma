@@ -1,6 +1,6 @@
-import { MultiNodeToken, NodeToken } from '../api/token';
-import { TreeNode } from '../provider/tree-node';
-import { Ctor, Provider, Token } from './providers';
+import type { MultiNodeToken, NodeToken } from "../api/token";
+import type { TreeNode } from "../provider/tree-node";
+import type { Ctor, Provider, Token } from "./providers";
 
 /**
  * Configuration options for the NodeContainer.
@@ -37,7 +37,6 @@ export interface iContainerOptions {
    */
   instant?: boolean;
 }
-
 
 /**
  * Interface for dependency injection containers.

@@ -30,7 +30,7 @@ export class TreeRootNode {
   private readonly _deps: Set<TreeNode<any>> = new Set();
   private readonly _treePool: DependencyPool = new Map();
 
-  constructor(public readonly instant = true) { }
+  constructor(public readonly instant = true) {}
 
   public get dependencies(): Set<TreeNode<any>> {
     return this._deps;
@@ -77,7 +77,7 @@ export class TreeNodeSingle<T = any> {
     return this._instance as T;
   }
 
-  constructor(public readonly proto: ProtoNodeSingle<T>) { }
+  constructor(public readonly proto: ProtoNodeSingle<T>) {}
 
   public addDependency(node: TreeNode<any>): void {
     if (node instanceof TreeNodeTransparent) this._transparent.add(node);
@@ -124,7 +124,7 @@ export class TreeNodeTransparent<T = any> {
     return this._instance as T;
   }
 
-  constructor(public readonly proto: ProtoNodeTransparent<T>) { }
+  constructor(public readonly proto: ProtoNodeTransparent<T>) {}
 
   public addDependency(node: TreeNode<any>): void {
     if (node instanceof TreeNodeTransparent) this._transparent.add(node);
@@ -165,7 +165,7 @@ export class TreeNodeMulti<T = any> {
   private _resolved = false;
   public allocations = 0;
 
-  constructor(public readonly proto: ProtoNodeMulti<T>) { }
+  constructor(public readonly proto: ProtoNodeMulti<T>) {}
 
   public collectPool(pool: DependencyPool): void {
     for (const dep of this._deps) dep.collectPool(pool);

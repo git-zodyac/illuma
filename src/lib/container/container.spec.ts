@@ -1,11 +1,11 @@
 import {
   extractToken,
   INJECTION_SYMBOL,
-  makeInjectable,
   MultiNodeToken,
-  nodeInject,
+  makeInjectable,
   NodeInjectable,
   NodeToken,
+  nodeInject,
 } from "../api";
 import { InjectionError } from "../errors";
 import { Illuma } from "../plugins";
@@ -1665,7 +1665,7 @@ describe("NodeContainer", () => {
       expect(factorySpy).toHaveBeenCalledTimes(2);
     });
 
-    it('should retrieve optional dependencies as null', () => {
+    it("should retrieve optional dependencies as null", () => {
       const container = new NodeContainer(params);
       const token = new NodeToken<string>("TOKEN");
 
