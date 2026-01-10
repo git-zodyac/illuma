@@ -22,11 +22,29 @@ Illuma implements a sophisticated dependency injection system that operates in d
 
 1. **Registration Phase**: Providers are registered and converted into proto nodes
 2. **Resolution Phase**: Proto nodes are resolved into tree nodes with full dependency graphs
-3. **Instantiation Phase**: Tree nodes are instantiated in dependency order
+3. **Instantiation Phase**: Tree nodes are instantiated (either eagerly or lazily when `{ instant: false }` is set)
 
 This separation ensures that circular dependencies are detected before any instantiation occurs and allows for efficient batch instantiation of the entire dependency graph.
 
 ## Key Concepts
+
+### Instantiation Modes
+
+Illuma supports two instantiation strategies which can be configured via the `instant` option:
+
+1. **Instant (Eager, default)**: All providers are instantiated immediately during bootstrap.
+   - **Pros**: Fail-fast (instantiation errors detected at startup), predictable runtime performance.
+   - **Cons**: Slower startup time for large applications, higher memory usage if some services are never used.
+
+2. **Deferred (Lazy)**: Providers are instantiated only when they are first requested via `container.get()` or `nodeInject()`.
+   - **Pros**: Faster startup time, lower initial memory usage.
+   - **Cons**: Instantiation errors might occur at runtime, first request for a service might be slower.
+
+To enable **deferred** instantiation, pass `instant: false` to the container options:
+
+```typescript
+const container = new NodeContainer({ instant: false });
+```
 
 ### Tokens
 
@@ -260,13 +278,18 @@ The root of the dependency tree that manages all top-level dependencies:
 class TreeRootNode {
   private readonly _deps: Set<TreeNode<any>> = new Set();
   private readonly _treePool: DependencyPool = new Map();
+
+  constructor(public readonly instant = true) {}
+
+  public build(): void;
 }
 ```
 
 - **`_deps`**: All top-level dependencies in the container
 - **`_treePool`**: Map of tokens to their tree nodes for fast lookup
+- **`instant`**: Whether to instantiate eagerly or defer instantiation
 
-The root node orchestrates the instantiation process by calling `instantiate()` on all dependencies, which recursively instantiates their dependencies first.
+The root node orchestrates the bootstrap process via the `build()` method. If `instant` is true, it triggers `instantiate()` on all dependencies immediately. If false, it collects the dependency pool without instantiating, effectively deferring creation until requested.
 
 ### TreeNodeSingle
 
@@ -561,22 +584,26 @@ TreeNodeSingle<UserService> {
 
 ## Instantiation Process
 
-After resolution, the container has a complete dependency graph as tree nodes. Instantiation traverses this graph and creates actual instances.
+After resolution, the container has a complete dependency graph as tree nodes. The bootstrap process calls `build()` on the root node which triggers instantiation or pool collection depending on the `instant` configuration.
 
 ### Instantiation Order
 
-The `TreeRootNode.instantiate()` method orchestrates the process:
+The `TreeRootNode.build()` method orchestrates the process:
 
 ```typescript
-public instantiate(): void {
+public build(): void {
   for (const dep of this._deps) {
-    dep.instantiate(this._treePool);
-    if ("token" in dep.proto) {
-      this._treePool.set(dep.proto.token, dep);
-    }
+    if ("token" in dep.proto) this._treePool.set(dep.proto.token, dep);
+
+    // If instant: true, we instantiate immediately
+    // If instant: false, we just ensure the pool is populated (deferred)
+    if (this.instant) dep.instantiate(this._treePool);
+    else dep.collectPool(this._treePool);
   }
 }
 ```
+
+When instantiation happens (either eagerly in `build()` or lazily upon first request):
 
 Each tree node instantiates its dependencies before instantiating itself, ensuring the correct order.
 
