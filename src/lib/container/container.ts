@@ -2,10 +2,12 @@ import { getInjectableToken, isConstructor, isInjectable } from "../api/decorato
 import { nodeInject } from "../api/injection";
 import type { NodeBase } from "../api/token";
 import { extractToken, isNodeBase, MultiNodeToken, NodeToken } from "../api/token";
+import type { InjectorFn } from '../api/types';
 import { InjectionContext } from "../context";
 import { InjectionError } from "../errors";
 import { Illuma } from "../plugins/core/plugin-container";
 import type { iMiddleware } from "../plugins/middlewares";
+import { runMiddlewares } from '../plugins/middlewares/runner';
 import {
   extractProvider,
   ProtoNodeMulti,
@@ -218,8 +220,8 @@ export class NodeContainer extends Illuma implements iDIContainer {
   protected collectMiddlewares(): iMiddleware[] {
     return [
       ...(this._parent &&
-      "collectMiddlewares" in this._parent &&
-      typeof this._parent.collectMiddlewares === "function"
+        "collectMiddlewares" in this._parent &&
+        typeof this._parent.collectMiddlewares === "function"
         ? this._parent.collectMiddlewares()
         : []),
       ...this.middlewares,
@@ -357,14 +359,33 @@ export class NodeContainer extends Illuma implements iDIContainer {
       throw InjectionError.invalidCtor(fn);
     }
 
-    const factory = isInjectable<T>(fn) ? () => new fn() : (fn as () => T);
+    let factory: () => T;
+    if (isInjectable<T>(fn)) {
+      const f = getInjectableToken<T>(fn).opts?.factory;
+      if (!f) factory = () => new fn();
+      else factory = () => getInjectableToken<T>(fn).opts?.factory?.() as T;
+    } else {
+      factory = fn as () => T;
+    }
 
-    return InjectionContext.instantiate(factory, (t, optional) => {
-      if (!this._rootNode) throw InjectionError.notBootstrapped();
-      const node = this._rootNode.find<T>(t);
-      if (!node && !optional) throw InjectionError.notFound(t);
+    const rootNode = this._rootNode;
+    if (!rootNode) throw InjectionError.notBootstrapped();
+
+    const retriever: InjectorFn = (token, optional) => {
+      const node = rootNode.find<T>(token);
+      if (!node && !optional) throw InjectionError.notFound(token);
 
       return node ? node.instance : null;
+    };
+
+    const deps = InjectionContext.scan(factory);
+    const middlewares = [...Illuma._middlewares, ...this.collectMiddlewares()];
+    const contextFactory = () => InjectionContext.instantiate(factory, retriever);
+
+    return runMiddlewares(middlewares, {
+      token: new NodeToken<T>("ProducedNode"),
+      deps: new Set([...deps.values()].map((d) => d.token)),
+      factory: contextFactory,
     });
   }
 }

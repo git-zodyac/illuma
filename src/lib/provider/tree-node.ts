@@ -2,7 +2,8 @@ import type { NodeBase } from "../api/token";
 import type { InjectorFn } from "../api/types";
 import { InjectionContext } from "../context/context";
 import { InjectionError } from "../errors";
-import type { iInstantiationParams, iMiddleware } from "../plugins/middlewares";
+import type { iMiddleware } from "../plugins/middlewares";
+import { runMiddlewares } from '../plugins/middlewares/runner';
 import { Injector } from "../utils/injector";
 import type { ProtoNodeMulti, ProtoNodeSingle, ProtoNodeTransparent } from "./proto";
 
@@ -12,47 +13,32 @@ export type InjectionPool =
   | Map<NodeBase<any>, TreeNode<any>>
   | WeakMap<NodeBase<any>, TreeNode<any>>;
 
-function runMiddlewares<T>(
-  middlewares: iMiddleware[],
-  params: iInstantiationParams<T>,
-): T {
-  const ms = middlewares as iMiddleware<T>[];
-  const next = (i: number, current: iInstantiationParams<T>): T => {
-    if (i >= ms.length) return current.factory();
-    return ms[i](current, (nextParams) => next(i + 1, nextParams));
-  };
-
-  return next(0, params);
-}
-
 function retrieverFactory<T>(
   node: NodeBase<T>,
   deps: InjectionPool,
-  transparentDeps: Set<TreeNodeTransparent>,
+  transparentDeps: Map<NodeBase<any>, TreeNodeTransparent>,
 ): InjectorFn {
   return (token: NodeBase<T>, optional: boolean | undefined): T | null => {
     const depNode = deps.get(token);
     if (!depNode && !optional) {
-      const transparent = Array.from(transparentDeps).find(
-        (n) => "proto" in n && n.proto.parent.token === token,
-      );
+      const transparent = transparentDeps.get(token);
       if (transparent) return transparent.instance;
       throw InjectionError.untracked(token, node);
     }
 
-    return depNode?.instance ?? null;
+    return depNode ? depNode.instance : null;
   };
 }
 
 // Tree Nodes
 export class TreeRootNode {
   private readonly _deps: Set<TreeNode<any>> = new Set();
-  private readonly _treePool: InjectionPool = new WeakMap();
+  private readonly _treePool: InjectionPool = new Map();
 
   constructor(
     public readonly instant = true,
     protected readonly middlewares: iMiddleware[] = [],
-  ) {}
+  ) { }
 
   public get dependencies(): Set<TreeNode<any>> {
     return this._deps;
@@ -126,7 +112,12 @@ export class TreeNodeSingle<T = any> {
     for (const node of this._deps.values()) node.instantiate(pool, middlewares);
     for (const dep of this._transparent) dep.instantiate(pool, middlewares);
 
-    const retriever = retrieverFactory(this.proto.token, this._deps, this._transparent);
+    const transparentMap = new Map<NodeBase<any>, TreeNodeTransparent>();
+    for (const tNode of this._transparent) {
+      transparentMap.set(tNode.proto.parent.token, tNode);
+    }
+
+    const retriever = retrieverFactory(this.proto.token, this._deps, transparentMap);
     const factory = this.proto.factory ?? this.proto.token.opts?.factory;
     if (!factory) throw InjectionError.notFound(this.proto.token);
 
@@ -162,7 +153,7 @@ export class TreeNodeTransparent<T = any> {
     return this._instance as T;
   }
 
-  constructor(public readonly proto: ProtoNodeTransparent<T>) {}
+  constructor(public readonly proto: ProtoNodeTransparent<T>) { }
 
   public addDependency(node: TreeNode<any>): void {
     if (node instanceof TreeNodeTransparent) this._transparent.add(node);
@@ -182,10 +173,15 @@ export class TreeNodeTransparent<T = any> {
     for (const dep of this._transparent) dep.instantiate(pool, middlewares);
     for (const node of this._deps.values()) node.instantiate(pool, middlewares);
 
+    const transparentMap = new Map<NodeBase<any>, TreeNodeTransparent>();
+    for (const tNode of this._transparent) {
+      transparentMap.set(tNode.proto.parent.token, tNode);
+    }
+
     const retriever = retrieverFactory(
       this.proto.parent.token,
       this._deps,
-      this._transparent,
+      transparentMap,
     );
 
     const refFactory = () => InjectionContext.instantiate(this.proto.factory, retriever);
@@ -212,7 +208,7 @@ export class TreeNodeMulti<T = any> {
   private _resolved = false;
   public allocations = 0;
 
-  constructor(public readonly proto: ProtoNodeMulti<T>) {}
+  constructor(public readonly proto: ProtoNodeMulti<T>) { }
 
   public collectPool(pool: InjectionPool): void {
     for (const dep of this._deps) dep.collectPool(pool);
